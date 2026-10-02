@@ -336,7 +336,72 @@ function rebuild(){
     m.count=L.length;m.instanceMatrix.needsUpdate=true;
   }
   if(grown)pickables=[ground].concat(meshes.slice(1));
+  checkGoat();
   scheduleSave();
+}
+
+/* ---------- mountain goat (appears when the model is over 25 blocks high) ---------- */
+const GOAT_HEIGHT=25;
+const goatG=new THREE.Group();goatG.visible=false;scene.add(goatG);
+(function(){
+  const coat=new THREE.MeshLambertMaterial({color:0xf4f1e8}),dark=new THREE.MeshLambertMaterial({color:0x4a3d30}),
+        horn=new THREE.MeshLambertMaterial({color:0x8a7658});
+  const box=(w,h,d,x,y,z,m)=>{const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);b.position.set(x,y,z);goatG.add(b)};
+  box(.7,.36,.34,0,.5,0,coat);                       /* body */
+  box(.26,.26,.26,.42,.72,0,coat);                   /* head */
+  box(.12,.1,.14,.58,.68,0,coat);                    /* muzzle */
+  box(.06,.14,.06,.5,.55,0,coat);                    /* beard */
+  box(.05,.2,.05,.36,.93,.08,horn);box(.05,.2,.05,.36,.93,-.08,horn);
+  box(.04,.04,.04,.52,.78,.14,dark);box(.04,.04,.04,.52,.78,-.14,dark); /* eyes */
+  box(.1,.1,.1,-.38,.62,0,coat);                     /* tail */
+  [[.24,.11],[.24,-.11],[-.24,.11],[-.24,-.11]].forEach(p=>{box(.1,.26,.1,p[0],.2,p[1],coat);box(.11,.08,.11,p[0],.04,p[1],dark)});
+})();
+const goat={on:false,x:0,z:0,hop:false,t0:0,dur:450,next:0,from:new THREE.Vector3(),to:new THREE.Vector3()};
+function topY(x,z){
+  for(let y=H-1;y>=0;y--){const t=world[idx(x,y,z)];if(t)return BLOCKS[t].water?-1:y+1}
+  return 0;
+}
+function goatPos(x,z,v){return v.set(x+.5-W/2,Math.max(0,topY(x,z)),z+.5-D/2)}
+function checkGoat(){
+  let peak=-1;
+  for(let i=world.length-1;i>=0;i--)if(world[i]&&!BLOCKS[world[i]].water){peak=i;break}
+  const tall=peak>=0&&Math.floor(peak/(W*D))>=GOAT_HEIGHT;
+  if(!tall){goat.on=false;goatG.visible=false;return}
+  if(!goat.on||!inb(goat.x,0,goat.z)){
+    const fresh=!goat.on;
+    goat.on=true;goat.hop=false;goat.x=peak%W;goat.z=Math.floor(peak/W)%D;
+    goatPos(goat.x,goat.z,goatG.position);goat.next=performance.now()+1200;
+    if(fresh)say('A mountain goat has moved in! Your mountain is over '+GOAT_HEIGHT+' blocks high.');
+  }
+}
+function goatTick(now){
+  if(!goat.on)return;
+  goatG.visible=goat.z<=cut;
+  if(goat.hop){
+    const k=Math.min(1,(now-goat.t0)/goat.dur);
+    goatG.position.lerpVectors(goat.from,goat.to,k);
+    goatG.position.y+=Math.sin(k*Math.PI)*(.5+Math.abs(goat.to.y-goat.from.y)*.3);
+    if(k>=1){goat.hop=false;goat.next=now+300+Math.random()*1300}
+    return;
+  }
+  goatPos(goat.x,goat.z,goatG.position);
+  if(now<goat.next)return;
+  const here=Math.max(0,topY(goat.x,goat.z)),opts=[];let total=0;
+  for(let dz=-1;dz<=1;dz++)for(let dx=-1;dx<=1;dx++){
+    if(!dx&&!dz)continue;
+    const x=goat.x+dx,z=goat.z+dz;if(!inb(x,0,z))continue;
+    const h=topY(x,z);if(h<0||Math.abs(h-here)>2)continue;
+    const w=Math.pow(1.6,h-here);opts.push([x,z,w]);total+=w;
+  }
+  goat.from.copy(goatG.position);
+  if(opts.length){
+    let r=Math.random()*total,pick=opts[0];
+    for(let n=0;n<opts.length;n++){r-=opts[n][2];if(r<=0){pick=opts[n];break}}
+    goatG.rotation.y=Math.atan2(-(pick[1]-goat.z),pick[0]-goat.x);
+    goat.x=pick[0];goat.z=pick[1];
+  }
+  goatPos(goat.x,goat.z,goat.to);
+  goat.hop=true;goat.t0=now;
 }
 
 /* ---------- camera ---------- */
@@ -685,7 +750,7 @@ let loaded=false;
 try{const s=localStorage.getItem('terrablocks-world');if(s)loaded=decode(JSON.parse(s))}catch(_){}
 if(loaded)rebuild();else{setupDims(40);starter('layers',false)}
 
-(function loop(){updateCam();renderer.render(scene,camera);placeLabels();requestAnimationFrame(loop)})();
+(function loop(){updateCam();goatTick(performance.now());renderer.render(scene,camera);placeLabels();requestAnimationFrame(loop)})();
 })();
 </script>
 </body>
