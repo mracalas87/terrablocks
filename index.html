@@ -180,7 +180,7 @@
 <script>
 (function(){
 'use strict';
-let W=40,D=40;const H=40,SIZES=[16,24,32,40,56,72,96];
+let W=40,D=40;const H=50,SIZES=[16,24,32,40,56,72,96];
 const BLOCKS=[null,
  {name:'Grass',group:'Surface',c:'#5a9e3a',v:.25,kind:'grass'},
  {name:'Topsoil',group:'Soil',c:'#6b4a2b',v:.25},
@@ -342,7 +342,7 @@ function rebuild(){
   scheduleSave();
 }
 
-/* ---------- hidden climbers: a bear at 15 blocks, a goat above 25, a mountaineer at 35 ---------- */
+/* ---------- hidden climbers: mountaineer 15, bear 20, goat 25, eagle 30, troll 35, gem 40 ---------- */
 function topY(x,z){
   for(let y=H-1;y>=0;y--){const t=world[idx(x,y,z)];if(t)return BLOCKS[t].water?-1:y+1}
   return 0;
@@ -350,18 +350,20 @@ function topY(x,z){
 function standPos(x,z,v){return v.set(x+.5-W/2,Math.max(0,topY(x,z)),z+.5-D/2)}
 const lam=c=>new THREE.MeshLambertMaterial({color:c});
 function makeClimber(o){
-  const g=new THREE.Group();g.visible=false;scene.add(g);
+  const g=new THREE.Group();g.visible=false;g.scale.setScalar(o.scale||1);scene.add(g);
   o.build((w,h,d,x,y,z,m)=>{const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);b.position.set(x,y,z);g.add(b)});
   const c={on:false,x:0,z:0,hop:false,t0:0,next:0,from:new THREE.Vector3(),to:new THREE.Vector3()};
   return{
+    c:c,
     check(peak){
-      const tall=peak>=0&&Math.floor(peak/(W*D))>=o.minTop;
+      const top=peak>=0?Math.floor(peak/(W*D)):-1,tall=o.when?o.when(top):top>=o.minTop;
+      if(peak<0)peak=idx(W>>1,0,D>>1);
       if(!tall){c.on=false;g.visible=false;return}
       if(!c.on||!inb(c.x,0,c.z)){
         const fresh=!c.on;
         c.on=true;c.hop=false;c.x=peak%W;c.z=Math.floor(peak/W)%D;
         standPos(c.x,c.z,g.position);c.next=performance.now()+o.pause;
-        if(fresh)say(o.msg);
+        if(fresh)say(o.msg,o.msgMs);
       }
     },
     tick(now){
@@ -395,8 +397,8 @@ function makeClimber(o){
   };
 }
 const climbers=[
-  makeClimber({minTop:14,step:1,uphill:1,dur:600,pause:1300,lift:.2,
-    msg:'A grizzly bear has wandered in! Your mountain is 15 blocks high.',
+  makeClimber({minTop:19,step:1,uphill:1,dur:600,pause:1300,lift:.2,
+    msg:'A grizzly bear has wandered in! Your mountain is 20 blocks high.',
     build(box){
       const fur=lam(0x6b4423),light=lam(0xa67c52),dark=lam(0x2a1c12);
       box(1,.5,.52,0,.52,0,fur);box(.34,.16,.44,.24,.82,0,fur);
@@ -406,8 +408,8 @@ const climbers=[
       box(.1,.1,.12,-.54,.62,0,fur);
       [[.33,.16],[.33,-.16],[-.33,.16],[-.33,-.16]].forEach(p=>{box(.2,.3,.18,p[0],.15,p[1],fur)});
     }}),
-  makeClimber({minTop:25,step:2,uphill:1.6,dur:450,pause:800,lift:.5,
-    msg:'A mountain goat has moved in! Your mountain is over 25 blocks high.',
+  makeClimber({minTop:24,step:2,uphill:1.6,dur:450,pause:800,lift:.5,
+    msg:'A mountain goat has moved in! Your mountain is 25 blocks high.',
     build(box){
       const coat=lam(0xf4f1e8),dark=lam(0x4a3d30),horn=lam(0x8a7658);
       box(.7,.36,.34,0,.5,0,coat);box(.26,.26,.26,.42,.72,0,coat);box(.12,.1,.14,.58,.68,0,coat);box(.06,.14,.06,.5,.55,0,coat);
@@ -416,8 +418,8 @@ const climbers=[
       box(.1,.1,.1,-.38,.62,0,coat);
       [[.24,.11],[.24,-.11],[-.24,.11],[-.24,-.11]].forEach(p=>{box(.1,.26,.1,p[0],.2,p[1],coat);box(.11,.08,.11,p[0],.04,p[1],dark)});
     }}),
-  makeClimber({minTop:34,step:1,uphill:2.2,dur:650,pause:1500,lift:.25,
-    msg:'A mountaineer has arrived! Your mountain is 35 blocks high.',
+  makeClimber({minTop:14,step:1,uphill:2.2,dur:650,pause:1500,lift:.25,
+    msg:'A mountaineer has arrived! Your mountain is 15 blocks high.',
     build(box){
       const jacket=lam(0xd23a2a),trousers=lam(0x2f4f8a),skin=lam(0xe2b48c),helmet=lam(0xffcf33),boot=lam(0x33302c),pack=lam(0x3f7a4a),steel=lam(0xb9c0c7);
       [.1,-.1].forEach(z=>{box(.14,.34,.14,0,.25,z,trousers);box(.18,.1,.15,.02,.05,z,boot)});
@@ -429,7 +431,7 @@ const climbers=[
       box(.04,.6,.04,.14,.4,-.3,boot);box(.2,.05,.05,.14,.7,-.3,steel);
     }})
 ];
-/* eagle: circles the summit when the model reaches the full 40 blocks */
+/* eagle: circles the summit when the model reaches 30 blocks */
 const eagle=(function(){
   const g=new THREE.Group(),tilt=new THREE.Group(),wl=new THREE.Group(),wr=new THREE.Group();
   g.add(tilt);tilt.add(wl,wr);g.visible=false;scene.add(g);tilt.rotation.x=.3;
@@ -439,27 +441,81 @@ const eagle=(function(){
   add(tilt,.3,.06,.32,-.52,0,0,white);
   wl.position.set(0,.08,.13);add(wl,.42,.05,1.05,0,0,.52,brown);
   wr.position.set(0,.08,-.13);add(wr,.42,.05,1.05,0,0,-.52,brown);
-  const c={on:false,cx:0,cz:0,pz:0};
+  const c={on:false,cx:0,cy:0,cz:0,pz:0};
   return{
     check(peak){
-      if(!(peak>=0&&Math.floor(peak/(W*D))>=H-1)){c.on=false;g.visible=false;return}
+      if(!(peak>=0&&Math.floor(peak/(W*D))>=29)){c.on=false;g.visible=false;return}
+      c.cy=Math.floor(peak/(W*D))+1;
       c.pz=Math.floor(peak/W)%D;c.cx=peak%W+.5-W/2;c.cz=c.pz+.5-D/2;
-      if(!c.on){c.on=true;say('An eagle is circling your summit! Your mountain is '+H+' blocks high, the highest you can build.')}
+      if(!c.on){c.on=true;say('An eagle is circling your summit! Your mountain is 30 blocks high.')}
     },
     tick(now){
       if(!c.on)return;
       g.visible=c.pz<=cut;
       const a=now/2600,r=5.5,f=.15+Math.sin(now/260)*.35;
-      g.position.set(c.cx+Math.cos(a)*r,H+2.2+Math.sin(now/1700)*.6,c.cz+Math.sin(a)*r);
+      g.position.set(c.cx+Math.cos(a)*r,c.cy+2.2+Math.sin(now/1700)*.6,c.cz+Math.sin(a)*r);
       g.rotation.y=Math.atan2(-Math.cos(a),-Math.sin(a));
       wl.rotation.x=-f;wr.rotation.x=f;
     }
   };
 })();
+/* troll: wakes at 35 blocks and smashes 10 blocks a minute until the gem (appears at 40) is collected */
+const troll={awake:false,beaten:false,last:0};
+const trollC=makeClimber({step:3,uphill:1.4,dur:900,pause:2200,lift:.3,scale:2.3,msgMs:12000,
+  msg:'A troll has woken up! He smashes 10 blocks every minute. Build to 40 blocks high to find the gem that sends him away.',
+  when(top){
+    if(troll.beaten)return false;
+    if(top>=34&&!troll.awake){troll.awake=true;troll.last=performance.now()}
+    return troll.awake;
+  },
+  build(box){
+    const skin=lam(0x6f8a5b),darkSkin=lam(0x566e47),cloth=lam(0x5a3d24),eye=lam(0xffe14a),tusk=lam(0xf3efe2),wood=lam(0x4a321d);
+    [.17,-.17].forEach(z=>box(.22,.36,.22,0,.18,z,skin));
+    box(.52,.16,.72,0,.4,0,cloth);box(.5,.56,.7,0,.74,0,skin);box(.3,.3,.5,.16,.62,0,darkSkin);
+    box(.34,.3,.38,.06,1.16,0,skin);box(.12,.12,.12,.27,1.12,0,darkSkin);
+    box(.05,.06,.07,.24,1.22,.1,eye);box(.05,.06,.07,.24,1.22,-.1,eye);
+    box(.05,.1,.05,.22,1.04,.12,tusk);box(.05,.1,.05,.22,1.04,-.12,tusk);
+    box(.2,.62,.2,0,.66,.46,skin);box(.2,.62,.2,.06,.66,-.46,skin);
+    box(.14,.8,.14,.2,.6,-.62,wood);box(.22,.3,.22,.2,1,-.62,wood);
+  }});
+climbers.push(trollC);
+const gem=new THREE.Mesh(new THREE.OctahedronGeometry(.8),new THREE.MeshLambertMaterial({color:0xff4fd8,emissive:0x7a1466,flatShading:true}));
+const gemHit=new THREE.Mesh(new THREE.SphereGeometry(2,8,8),new THREE.MeshBasicMaterial({visible:false}));
+gem.add(gemHit);gem.visible=false;gem.userData.y=0;scene.add(gem);
+function resetTroll(beaten){troll.awake=false;troll.beaten=!!beaten;gem.visible=false}
+function collectGem(){
+  resetTroll(true);
+  say('You collected the gem! The troll has gone and your mountain is safe.',8000);
+  checkClimbers();scheduleSave();
+}
+function gemTap(e){
+  if(!gem.visible)return false;
+  const r=canvas.getBoundingClientRect();
+  mouse.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);
+  ray.setFromCamera(mouse,camera);
+  if(!ray.intersectObject(gemHit,false).length)return false;
+  collectGem();return true;
+}
+function trollTick(now){
+  if(gem.visible){gem.rotation.y=now/500;gem.position.y=gem.userData.y+Math.sin(now/600)*.25}
+  if(!troll.awake||now-troll.last<6000)return;
+  troll.last=now;
+  const c=trollC.c;if(!inb(c.x,0,c.z))return;
+  const h=topY(c.x,c.z);
+  if(h<=0){troll.last=now-5000;return}
+  const i=idx(c.x,h-1,c.z);
+  undoStack.push({i:i,prev:world[i]});if(undoStack.length>300)undoStack.shift();
+  world[i]=0;rebuild();
+}
 function checkClimbers(){
   let peak=-1;
   for(let i=world.length-1;i>=0;i--)if(world[i]&&!BLOCKS[world[i]].water){peak=i;break}
   climbers.forEach(c=>c.check(peak));eagle.check(peak);
+  if(troll.awake&&!gem.visible&&peak>=0&&Math.floor(peak/(W*D))>=39){
+    const gy=Math.floor(peak/(W*D))+3.6;
+    gem.userData.y=gy;gem.position.set(peak%W+.5-W/2,gy,Math.floor(peak/W)%D+.5-D/2);gem.visible=true;
+    say('A gem has appeared above your summit! Tap it to send the troll away.',10000);
+  }
 }
 
 /* ---------- camera ---------- */
@@ -518,6 +574,7 @@ function setBlock(c,t){
   world[i]=t;rebuild();
 }
 function act(e){
+  if(gemTap(e)){return}
   if(tool==='label'){
     const p=pick(e);
     if(!p||!p.hit){say('Tap a block to pin a label to it.');return}
@@ -666,7 +723,8 @@ $('sizeBtn').addEventListener('click',()=>{newMenu.classList.remove('open');size
 sizeMenu.querySelectorAll('[data-size]').forEach(b=>b.addEventListener('click',()=>{resizeLand(+b.dataset.size);closeNew()}));
 newMenu.querySelectorAll('[data-start]').forEach(b=>b.addEventListener('click',()=>{starter(b.dataset.start,true);closeNew()}));
 const hint=$('hint');function hideHint(){hint.classList.add('gone')}
-function say(t){hint.textContent=t;hint.classList.remove('gone');setTimeout(hideHint,5000)}
+let sayTimer=0;
+function say(t,ms){hint.textContent=t;hint.classList.remove('gone');clearTimeout(sayTimer);sayTimer=setTimeout(hideHint,ms||5000)}
 setTimeout(hideHint,9000);
 window.addEventListener('keydown',e=>{
   if(e.target&&e.target.tagName==='INPUT')return;
@@ -737,7 +795,7 @@ document.addEventListener('pointerout',e=>{if(e.pointerType==='mouse'&&tipTarget
 function fillLayer(y,t,x0,x1){for(let z=0;z<D;z++)for(let x=(x0||0);x<(x1===undefined?W:x1);x++)world[idx(x,y,z)]=t}
 function starter(kind,undoable){
   if(undoable)undoStack.push({snap:world.slice(),W:W,labels:cloneLabels()});
-  world=new Uint8Array(W*H*D);labels=[];renderLabels();
+  world=new Uint8Array(W*H*D);labels=[];renderLabels();resetTroll(false);
   if(kind==='flat'){fillLayer(0,2);fillLayer(1,1)}
   if(kind==='layers'){[9,9,7,6,5,3,2,1].forEach((t,y)=>fillLayer(y,t))}
   if(kind==='sea'){
@@ -750,7 +808,7 @@ function starter(kind,undoable){
 function encode(){
   const out=[];let prev=world[0],n=0;
   for(let i=0;i<world.length;i++){if(world[i]===prev)n++;else{out.push(prev,n);prev=world[i];n=1}}
-  out.push(prev,n);return{app:'terrablocks',v:1,W:W,H:H,D:D,rle:out,labels:cloneLabels()};
+  out.push(prev,n);return{app:'terrablocks',v:1,W:W,H:H,D:D,rle:out,labels:cloneLabels(),trollBeaten:troll.beaten};
 }
 function decode(o){
   if(!o||o.app!=='terrablocks'||SIZES.indexOf(o.W)<0||o.D!==o.W||!(o.H>0&&o.H<=H)||!Array.isArray(o.rle))return false;
@@ -758,7 +816,7 @@ function decode(o){
   for(let i=0;i<o.rle.length;i+=2){const t=o.rle[i],n=o.rle[i+1];if(t>=NB||p+n>w.length)return false;w.fill(t,p,p+n);p+=n}
   if(p!==o.W*o.H*o.D)return false;
   if(o.W!==W||!ground)setupDims(o.W);
-  world=w;
+  world=w;resetTroll(o.trollBeaten);
   labels=(Array.isArray(o.labels)?o.labels:[]).filter(l=>l&&typeof l.text==='string'&&inb(l.x,l.y,l.z)).slice(0,40)
     .map(l=>({x:l.x,y:l.y,z:l.z,text:l.text.slice(0,40)}));
   renderLabels();return true;
@@ -810,7 +868,7 @@ let loaded=false;
 try{const s=localStorage.getItem('terrablocks-world');if(s)loaded=decode(JSON.parse(s))}catch(_){}
 if(loaded)rebuild();else{setupDims(40);starter('layers',false)}
 
-(function loop(){updateCam();{const now=performance.now();climbers.forEach(c=>c.tick(now));eagle.tick(now)}renderer.render(scene,camera);placeLabels();requestAnimationFrame(loop)})();
+(function loop(){updateCam();{const now=performance.now();climbers.forEach(c=>c.tick(now));eagle.tick(now);trollTick(now)}renderer.render(scene,camera);placeLabels();requestAnimationFrame(loop)})();
 })();
 </script>
 </body>
