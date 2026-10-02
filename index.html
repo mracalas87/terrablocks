@@ -66,6 +66,8 @@
   #tip b{color:var(--marker);display:block;margin-bottom:2px}
   #credit{position:fixed;z-index:1;right:22px;top:calc(76px + env(safe-area-inset-top,0px));font-size:14px;font-weight:700;font-style:italic;
     color:#000;opacity:.8;pointer-events:none;letter-spacing:.4px;animation:drift 7s ease-in-out infinite}
+  #credit{text-align:right;max-width:min(300px,60vw)}
+  #credit span{display:block;font-size:12px;font-weight:400;margin-top:2px;line-height:1.3}
   @keyframes drift{0%,100%{transform:translateY(0)}50%{transform:translateY(7px)}}
   @media (prefers-reduced-motion:reduce){#credit{animation:none}}
   .panel{z-index:2}
@@ -157,7 +159,7 @@
 </label>
 
 <div id="palette" class="panel" role="group" aria-label="Blocks"></div>
-<div id="credit">Created by Mr Andy</div>
+<div id="credit">Created by Mr Andy<span>&lsquo;You are not within the mountains, the mountains are within you&rsquo;</span></div>
 <div id="tip" role="tooltip"></div>
 <div id="intro" role="dialog" aria-modal="true" aria-labelledby="introTitle">
   <div id="introCard">
@@ -178,7 +180,7 @@
 <script>
 (function(){
 'use strict';
-let W=40,D=40;const H=32,SIZES=[16,24,32,40,56,72,96];
+let W=40,D=40;const H=40,SIZES=[16,24,32,40,56,72,96];
 const BLOCKS=[null,
  {name:'Grass',group:'Surface',c:'#5a9e3a',v:.25,kind:'grass'},
  {name:'Topsoil',group:'Soil',c:'#6b4a2b',v:.25},
@@ -336,72 +338,90 @@ function rebuild(){
     m.count=L.length;m.instanceMatrix.needsUpdate=true;
   }
   if(grown)pickables=[ground].concat(meshes.slice(1));
-  checkGoat();
+  checkClimbers();
   scheduleSave();
 }
 
-/* ---------- mountain goat (appears when the model is over 25 blocks high) ---------- */
-const GOAT_HEIGHT=25;
-const goatG=new THREE.Group();goatG.visible=false;scene.add(goatG);
-(function(){
-  const coat=new THREE.MeshLambertMaterial({color:0xf4f1e8}),dark=new THREE.MeshLambertMaterial({color:0x4a3d30}),
-        horn=new THREE.MeshLambertMaterial({color:0x8a7658});
-  const box=(w,h,d,x,y,z,m)=>{const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);b.position.set(x,y,z);goatG.add(b)};
-  box(.7,.36,.34,0,.5,0,coat);                       /* body */
-  box(.26,.26,.26,.42,.72,0,coat);                   /* head */
-  box(.12,.1,.14,.58,.68,0,coat);                    /* muzzle */
-  box(.06,.14,.06,.5,.55,0,coat);                    /* beard */
-  box(.05,.2,.05,.36,.93,.08,horn);box(.05,.2,.05,.36,.93,-.08,horn);
-  box(.04,.04,.04,.52,.78,.14,dark);box(.04,.04,.04,.52,.78,-.14,dark); /* eyes */
-  box(.1,.1,.1,-.38,.62,0,coat);                     /* tail */
-  [[.24,.11],[.24,-.11],[-.24,.11],[-.24,-.11]].forEach(p=>{box(.1,.26,.1,p[0],.2,p[1],coat);box(.11,.08,.11,p[0],.04,p[1],dark)});
-})();
-const goat={on:false,x:0,z:0,hop:false,t0:0,dur:450,next:0,from:new THREE.Vector3(),to:new THREE.Vector3()};
+/* ---------- hidden climbers: a goat above 25 blocks, a mountaineer at 35 ---------- */
 function topY(x,z){
   for(let y=H-1;y>=0;y--){const t=world[idx(x,y,z)];if(t)return BLOCKS[t].water?-1:y+1}
   return 0;
 }
-function goatPos(x,z,v){return v.set(x+.5-W/2,Math.max(0,topY(x,z)),z+.5-D/2)}
-function checkGoat(){
+function standPos(x,z,v){return v.set(x+.5-W/2,Math.max(0,topY(x,z)),z+.5-D/2)}
+const lam=c=>new THREE.MeshLambertMaterial({color:c});
+function makeClimber(o){
+  const g=new THREE.Group();g.visible=false;scene.add(g);
+  o.build((w,h,d,x,y,z,m)=>{const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);b.position.set(x,y,z);g.add(b)});
+  const c={on:false,x:0,z:0,hop:false,t0:0,next:0,from:new THREE.Vector3(),to:new THREE.Vector3()};
+  return{
+    check(peak){
+      const tall=peak>=0&&Math.floor(peak/(W*D))>=o.minTop;
+      if(!tall){c.on=false;g.visible=false;return}
+      if(!c.on||!inb(c.x,0,c.z)){
+        const fresh=!c.on;
+        c.on=true;c.hop=false;c.x=peak%W;c.z=Math.floor(peak/W)%D;
+        standPos(c.x,c.z,g.position);c.next=performance.now()+o.pause;
+        if(fresh)say(o.msg);
+      }
+    },
+    tick(now){
+      if(!c.on)return;
+      g.visible=c.z<=cut;
+      if(c.hop){
+        const k=Math.min(1,(now-c.t0)/o.dur);
+        g.position.lerpVectors(c.from,c.to,k);
+        g.position.y+=Math.sin(k*Math.PI)*(o.lift+Math.abs(c.to.y-c.from.y)*.3);
+        if(k>=1){c.hop=false;c.next=now+o.pause*(.4+Math.random()*1.6)}
+        return;
+      }
+      standPos(c.x,c.z,g.position);
+      if(now<c.next)return;
+      const here=Math.max(0,topY(c.x,c.z)),opts=[];let total=0;
+      for(let dz=-1;dz<=1;dz++)for(let dx=-1;dx<=1;dx++){
+        if(!dx&&!dz)continue;
+        const x=c.x+dx,z=c.z+dz;if(!inb(x,0,z))continue;
+        const h=topY(x,z);if(h<0||Math.abs(h-here)>o.step)continue;
+        const w=Math.pow(o.uphill,h-here);opts.push([x,z,w]);total+=w;
+      }
+      c.from.copy(g.position);
+      if(opts.length){
+        let r=Math.random()*total,pick=opts[0];
+        for(let n=0;n<opts.length;n++){r-=opts[n][2];if(r<=0){pick=opts[n];break}}
+        g.rotation.y=Math.atan2(-(pick[1]-c.z),pick[0]-c.x);
+        c.x=pick[0];c.z=pick[1];
+      }
+      standPos(c.x,c.z,c.to);c.hop=true;c.t0=now;
+    }
+  };
+}
+const climbers=[
+  makeClimber({minTop:25,step:2,uphill:1.6,dur:450,pause:800,lift:.5,
+    msg:'A mountain goat has moved in! Your mountain is over 25 blocks high.',
+    build(box){
+      const coat=lam(0xf4f1e8),dark=lam(0x4a3d30),horn=lam(0x8a7658);
+      box(.7,.36,.34,0,.5,0,coat);box(.26,.26,.26,.42,.72,0,coat);box(.12,.1,.14,.58,.68,0,coat);box(.06,.14,.06,.5,.55,0,coat);
+      box(.05,.2,.05,.36,.93,.08,horn);box(.05,.2,.05,.36,.93,-.08,horn);
+      box(.04,.04,.04,.52,.78,.14,dark);box(.04,.04,.04,.52,.78,-.14,dark);
+      box(.1,.1,.1,-.38,.62,0,coat);
+      [[.24,.11],[.24,-.11],[-.24,.11],[-.24,-.11]].forEach(p=>{box(.1,.26,.1,p[0],.2,p[1],coat);box(.11,.08,.11,p[0],.04,p[1],dark)});
+    }}),
+  makeClimber({minTop:34,step:1,uphill:2.2,dur:650,pause:1500,lift:.25,
+    msg:'A mountaineer has arrived! Your mountain is 35 blocks high.',
+    build(box){
+      const jacket=lam(0xd23a2a),trousers=lam(0x2f4f8a),skin=lam(0xe2b48c),helmet=lam(0xffcf33),boot=lam(0x33302c),pack=lam(0x3f7a4a),steel=lam(0xb9c0c7);
+      [.1,-.1].forEach(z=>{box(.14,.34,.14,0,.25,z,trousers);box(.18,.1,.15,.02,.05,z,boot)});
+      box(.24,.4,.38,0,.62,0,jacket);
+      box(.1,.36,.1,0,.62,.25,jacket);box(.1,.36,.1,.06,.64,-.25,jacket);
+      box(.24,.24,.24,0,.95,0,skin);box(.3,.1,.3,0,1.1,0,helmet);
+      box(.04,.04,.04,.13,.98,.06,boot);box(.04,.04,.04,.13,.98,-.06,boot);
+      box(.16,.34,.3,-.2,.64,0,pack);
+      box(.04,.6,.04,.14,.4,-.3,boot);box(.2,.05,.05,.14,.7,-.3,steel);
+    }})
+];
+function checkClimbers(){
   let peak=-1;
   for(let i=world.length-1;i>=0;i--)if(world[i]&&!BLOCKS[world[i]].water){peak=i;break}
-  const tall=peak>=0&&Math.floor(peak/(W*D))>=GOAT_HEIGHT;
-  if(!tall){goat.on=false;goatG.visible=false;return}
-  if(!goat.on||!inb(goat.x,0,goat.z)){
-    const fresh=!goat.on;
-    goat.on=true;goat.hop=false;goat.x=peak%W;goat.z=Math.floor(peak/W)%D;
-    goatPos(goat.x,goat.z,goatG.position);goat.next=performance.now()+1200;
-    if(fresh)say('A mountain goat has moved in! Your mountain is over '+GOAT_HEIGHT+' blocks high.');
-  }
-}
-function goatTick(now){
-  if(!goat.on)return;
-  goatG.visible=goat.z<=cut;
-  if(goat.hop){
-    const k=Math.min(1,(now-goat.t0)/goat.dur);
-    goatG.position.lerpVectors(goat.from,goat.to,k);
-    goatG.position.y+=Math.sin(k*Math.PI)*(.5+Math.abs(goat.to.y-goat.from.y)*.3);
-    if(k>=1){goat.hop=false;goat.next=now+300+Math.random()*1300}
-    return;
-  }
-  goatPos(goat.x,goat.z,goatG.position);
-  if(now<goat.next)return;
-  const here=Math.max(0,topY(goat.x,goat.z)),opts=[];let total=0;
-  for(let dz=-1;dz<=1;dz++)for(let dx=-1;dx<=1;dx++){
-    if(!dx&&!dz)continue;
-    const x=goat.x+dx,z=goat.z+dz;if(!inb(x,0,z))continue;
-    const h=topY(x,z);if(h<0||Math.abs(h-here)>2)continue;
-    const w=Math.pow(1.6,h-here);opts.push([x,z,w]);total+=w;
-  }
-  goat.from.copy(goatG.position);
-  if(opts.length){
-    let r=Math.random()*total,pick=opts[0];
-    for(let n=0;n<opts.length;n++){r-=opts[n][2];if(r<=0){pick=opts[n];break}}
-    goatG.rotation.y=Math.atan2(-(pick[1]-goat.z),pick[0]-goat.x);
-    goat.x=pick[0];goat.z=pick[1];
-  }
-  goatPos(goat.x,goat.z,goat.to);
-  goat.hop=true;goat.t0=now;
+  climbers.forEach(c=>c.check(peak));
 }
 
 /* ---------- camera ---------- */
@@ -726,6 +746,8 @@ $('photo').addEventListener('click',()=>{
   });
   g.textAlign='right';g.font='bold '+12*k+'px "Trebuchet MS",sans-serif';g.fillStyle='rgba(43,58,46,.7)';
   g.fillStyle="rgba(0,0,0,.8)";g.fillText("Created by Mr Andy",c.width-16*k,22*k);
+  g.font='italic '+10.5*k+'px "Trebuchet MS",sans-serif';
+  g.fillText('\u2018You are not within the mountains, the mountains are within you\u2019',c.width-16*k,38*k);
   download(c.toDataURL('image/png'),'mountain-makers-photo.png');
 });
 $('saveFile').addEventListener('click',()=>{
@@ -750,7 +772,7 @@ let loaded=false;
 try{const s=localStorage.getItem('terrablocks-world');if(s)loaded=decode(JSON.parse(s))}catch(_){}
 if(loaded)rebuild();else{setupDims(40);starter('layers',false)}
 
-(function loop(){updateCam();goatTick(performance.now());renderer.render(scene,camera);placeLabels();requestAnimationFrame(loop)})();
+(function loop(){updateCam();{const now=performance.now();climbers.forEach(c=>c.tick(now))}renderer.render(scene,camera);placeLabels();requestAnimationFrame(loop)})();
 })();
 </script>
 </body>
