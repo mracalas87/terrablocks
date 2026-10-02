@@ -342,7 +342,7 @@ function rebuild(){
   scheduleSave();
 }
 
-/* ---------- hidden climbers: a goat above 25 blocks, a mountaineer at 35 ---------- */
+/* ---------- hidden climbers: a bear at 15 blocks, a goat above 25, a mountaineer at 35 ---------- */
 function topY(x,z){
   for(let y=H-1;y>=0;y--){const t=world[idx(x,y,z)];if(t)return BLOCKS[t].water?-1:y+1}
   return 0;
@@ -395,6 +395,17 @@ function makeClimber(o){
   };
 }
 const climbers=[
+  makeClimber({minTop:14,step:1,uphill:1,dur:600,pause:1300,lift:.2,
+    msg:'A grizzly bear has wandered in! Your mountain is 15 blocks high.',
+    build(box){
+      const fur=lam(0x6b4423),light=lam(0xa67c52),dark=lam(0x2a1c12);
+      box(1,.5,.52,0,.52,0,fur);box(.34,.16,.44,.24,.82,0,fur);
+      box(.36,.34,.38,.62,.62,0,fur);box(.16,.14,.2,.86,.55,0,light);box(.06,.06,.08,.95,.6,0,dark);
+      box(.08,.1,.1,.6,.84,.15,fur);box(.08,.1,.1,.6,.84,-.15,fur);
+      box(.04,.04,.04,.8,.7,.12,dark);box(.04,.04,.04,.8,.7,-.12,dark);
+      box(.1,.1,.12,-.54,.62,0,fur);
+      [[.33,.16],[.33,-.16],[-.33,.16],[-.33,-.16]].forEach(p=>{box(.2,.3,.18,p[0],.15,p[1],fur)});
+    }}),
   makeClimber({minTop:25,step:2,uphill:1.6,dur:450,pause:800,lift:.5,
     msg:'A mountain goat has moved in! Your mountain is over 25 blocks high.',
     build(box){
