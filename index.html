@@ -1,9 +1,11 @@
 <!DOCTYPE html>
+<!-- Year 5 Mountain Makers. Copyright (c) 2026 Mr Andy, King's College School Cascais. All rights reserved. Not to be copied or redistributed without permission. -->
 <html lang="en-GB">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="author" content="Mr Andy">
 <meta name="theme-color" content="#2b3a2e">
 <title>Year 5 Mountain Makers</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -62,6 +64,26 @@
   #tip{position:fixed;display:none;z-index:50;pointer-events:none;background:var(--slate);color:var(--paper);
     padding:9px 13px;border-radius:9px;font-size:14px;line-height:1.35;max-width:250px;box-shadow:3px 3px 0 rgba(0,0,0,.25)}
   #tip b{color:var(--marker);display:block;margin-bottom:2px}
+  #credit{position:fixed;z-index:1;right:22px;top:calc(76px + env(safe-area-inset-top,0px));font-size:14px;font-weight:700;font-style:italic;
+    color:#000;opacity:.8;pointer-events:none;letter-spacing:.4px;animation:drift 7s ease-in-out infinite}
+  @keyframes drift{0%,100%{transform:translateY(0)}50%{transform:translateY(7px)}}
+  @media (prefers-reduced-motion:reduce){#credit{animation:none}}
+  .panel{z-index:2}
+  #hint{z-index:3}
+  #intro{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;background:rgba(28,36,30,.6);padding:16px}
+  #intro.open{display:flex}
+  #introCard{background:var(--paper);border:3px solid var(--slate);border-radius:14px;box-shadow:5px 5px 0 var(--slate);
+    width:min(480px,100%);padding:22px 24px 18px}
+  #introCard .num{display:inline-block;background:var(--slate);color:var(--paper);font-weight:700;font-size:13px;padding:3px 10px;border-radius:20px}
+  #introCard h2{margin:12px 0 8px;font-size:25px;line-height:1.15}
+  #introCard p{margin:0 0 12px;font-size:16.5px;line-height:1.45}
+  #introWords{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+  #introWords span{border:2px solid var(--contour);border-radius:6px;padding:2px 9px;font-weight:700;font-size:14px;background:#fff}
+  #introNav{display:flex;gap:8px;align-items:center;margin-top:6px}
+  #introNav .gap{flex:1}
+  #introNav button{border:2px solid var(--slate)}
+  #introNext{background:var(--marker)}
+  #introSkip{border-color:transparent!important;font-weight:400;text-decoration:underline}
   #labels{position:fixed;inset:0;pointer-events:none;overflow:hidden}
   .lab{position:absolute;transform:translate(-50%,-100%);margin-top:-22px;pointer-events:auto;cursor:pointer;
     background:var(--paper);border:2px solid var(--slate);border-radius:6px;padding:3px 8px;font-size:13px;font-weight:700;white-space:nowrap}
@@ -87,6 +109,7 @@
   </div>
   <button id="undo" data-tip="Undo|Takes back your last change. Tap again to go back further.">Undo</button>
   <span class="gap"></span>
+  <button id="helpBtn" data-tip="Help|Shows the instructions for this task again.">Help</button>
   <button id="sizeBtn" data-tip="Size|Makes the land bigger or smaller. Your model stays in the middle.">Size</button>
   <button id="newBtn" data-tip="New|Starts a new model from flat land, rock layers, land and sea, or nothing.">New</button>
   <button id="photo" data-tip="Take photo|Saves a picture of this view, with your labels, to show your work.">Take photo</button>
@@ -134,7 +157,22 @@
 </label>
 
 <div id="palette" class="panel" role="group" aria-label="Blocks"></div>
+<div id="credit">Created by Mr Andy</div>
 <div id="tip" role="tooltip"></div>
+<div id="intro" role="dialog" aria-modal="true" aria-labelledby="introTitle">
+  <div id="introCard">
+    <span class="num" id="introNum"></span>
+    <h2 id="introTitle"></h2>
+    <p id="introText"></p>
+    <div id="introWords"></div>
+    <div id="introNav">
+      <button id="introBack">Back</button>
+      <button id="introSkip">Skip</button>
+      <span class="gap"></span>
+      <button id="introNext">Next</button>
+    </div>
+  </div>
+</div>
 <div id="hint">Tap to place a block. Drag to turn. Pinch or scroll to zoom.</div>
 
 <script>
@@ -514,6 +552,31 @@ window.addEventListener('keydown',e=>{
   if(k==='b')setTool('build');if(k==='d')setTool('dig');if(k==='s')setTool('paint');
 });
 
+/* ---------- instruction screens ---------- */
+const STEPS=[
+ {t:'Build a mountain range',p:'Use the tools to create your own mountain range. Start with the rock layers, then build upwards using different rocks, soil, grass, snow and water.'},
+ {t:'Label your mountains',p:'Use what you know about mountains. Choose the Label tool and pin a name to each key feature of your model.',w:['peak','summit','ridge','valley','trough','slope']},
+ {t:'Show how you made it',p:'Take screenshots as you build, not only at the end. Add them to a Canva design, then share it with your teacher.'},
+ {t:'Find out what each tool does',p:'Hold your finger on any tool or block for a moment. A short explanation will pop up.'}
+];
+let step=0;const intro=$('intro');
+function showStep(){
+  const s=STEPS[step];
+  $('introNum').textContent='Step '+(step+1)+' of '+STEPS.length;
+  $('introTitle').textContent=s.t;$('introText').textContent=s.p;
+  const w=$('introWords');w.textContent='';
+  (s.w||[]).forEach(x=>{const e=document.createElement('span');e.textContent=x;w.appendChild(e)});
+  $('introBack').style.visibility=step?'visible':'hidden';
+  $('introSkip').style.display=step===STEPS.length-1?'none':'';
+  $('introNext').textContent=step===STEPS.length-1?'Start building':'Next';
+}
+function openIntro(){step=0;showStep();intro.classList.add('open');hideHint()}
+$('introNext').addEventListener('click',()=>{if(step<STEPS.length-1){step++;showStep()}else intro.classList.remove('open')});
+$('introBack').addEventListener('click',()=>{if(step>0){step--;showStep()}});
+$('introSkip').addEventListener('click',()=>intro.classList.remove('open'));
+$('helpBtn').addEventListener('click',()=>{closeNew();openIntro()});
+openIntro();
+
 /* ---------- hold-down help ---------- */
 const tipEl=$('tip');let tipTimer=0,tipHide=0,tipShown=false,tipStart=null;
 function hideTip(){tipEl.style.display='none'}
@@ -596,6 +659,8 @@ $('photo').addEventListener('click',()=>{
     g.fillStyle='#f3f6ea';g.fillRect(x-bw/2,by,bw,bh);g.strokeRect(x-bw/2,by,bw,bh);
     g.fillStyle='#1c241e';g.fillText(l.text,x,by+bh/2);
   });
+  g.textAlign='right';g.font='bold '+12*k+'px "Trebuchet MS",sans-serif';g.fillStyle='rgba(43,58,46,.7)';
+  g.fillStyle="rgba(0,0,0,.8)";g.fillText("Created by Mr Andy",c.width-16*k,22*k);
   download(c.toDataURL('image/png'),'mountain-makers-photo.png');
 });
 $('saveFile').addEventListener('click',()=>{
