@@ -418,10 +418,37 @@ const climbers=[
       box(.04,.6,.04,.14,.4,-.3,boot);box(.2,.05,.05,.14,.7,-.3,steel);
     }})
 ];
+/* eagle: circles the summit when the model reaches the full 40 blocks */
+const eagle=(function(){
+  const g=new THREE.Group(),tilt=new THREE.Group(),wl=new THREE.Group(),wr=new THREE.Group();
+  g.add(tilt);tilt.add(wl,wr);g.visible=false;scene.add(g);tilt.rotation.x=.3;
+  const brown=lam(0x3b2a1e),white=lam(0xf7f5ee),yellow=lam(0xf2b01e);
+  const add=(p,w,h,d,x,y,z,m)=>{const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);b.position.set(x,y,z);p.add(b)};
+  add(tilt,.8,.22,.26,0,0,0,brown);add(tilt,.24,.22,.22,.5,.05,0,white);add(tilt,.12,.08,.1,.67,.02,0,yellow);
+  add(tilt,.3,.06,.32,-.52,0,0,white);
+  wl.position.set(0,.08,.13);add(wl,.42,.05,1.05,0,0,.52,brown);
+  wr.position.set(0,.08,-.13);add(wr,.42,.05,1.05,0,0,-.52,brown);
+  const c={on:false,cx:0,cz:0,pz:0};
+  return{
+    check(peak){
+      if(!(peak>=0&&Math.floor(peak/(W*D))>=H-1)){c.on=false;g.visible=false;return}
+      c.pz=Math.floor(peak/W)%D;c.cx=peak%W+.5-W/2;c.cz=c.pz+.5-D/2;
+      if(!c.on){c.on=true;say('An eagle is circling your summit! Your mountain is '+H+' blocks high, the highest you can build.')}
+    },
+    tick(now){
+      if(!c.on)return;
+      g.visible=c.pz<=cut;
+      const a=now/2600,r=5.5,f=.15+Math.sin(now/260)*.35;
+      g.position.set(c.cx+Math.cos(a)*r,H+2.2+Math.sin(now/1700)*.6,c.cz+Math.sin(a)*r);
+      g.rotation.y=Math.atan2(-Math.cos(a),-Math.sin(a));
+      wl.rotation.x=-f;wr.rotation.x=f;
+    }
+  };
+})();
 function checkClimbers(){
   let peak=-1;
   for(let i=world.length-1;i>=0;i--)if(world[i]&&!BLOCKS[world[i]].water){peak=i;break}
-  climbers.forEach(c=>c.check(peak));
+  climbers.forEach(c=>c.check(peak));eagle.check(peak);
 }
 
 /* ---------- camera ---------- */
@@ -772,7 +799,7 @@ let loaded=false;
 try{const s=localStorage.getItem('terrablocks-world');if(s)loaded=decode(JSON.parse(s))}catch(_){}
 if(loaded)rebuild();else{setupDims(40);starter('layers',false)}
 
-(function loop(){updateCam();{const now=performance.now();climbers.forEach(c=>c.tick(now))}renderer.render(scene,camera);placeLabels();requestAnimationFrame(loop)})();
+(function loop(){updateCam();{const now=performance.now();climbers.forEach(c=>c.tick(now));eagle.tick(now)}renderer.render(scene,camera);placeLabels();requestAnimationFrame(loop)})();
 })();
 </script>
 </body>
