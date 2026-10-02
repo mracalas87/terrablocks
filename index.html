@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#2b3a2e">
-<title>TerraBlocks</title>
+<title>Year 5 Mountain Makers</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
   :root{
@@ -78,7 +78,7 @@
 <div id="labels"></div>
 
 <div id="top" class="panel">
-  <h1>TerraBlocks</h1>
+  <h1>Year 5 Mountain Makers</h1>
   <div class="seg" role="group" aria-label="Tool">
     <button id="tBuild" data-tip="Build|Tap a surface to add the block you have chosen from the bar at the bottom." aria-pressed="true">Build</button>
     <button id="tDig" data-tip="Dig|Tap a block to remove it." aria-pressed="false">Dig</button>
@@ -596,7 +596,7 @@ $('photo').addEventListener('click',()=>{
     g.fillStyle='#f3f6ea';g.fillRect(x-bw/2,by,bw,bh);g.strokeRect(x-bw/2,by,bw,bh);
     g.fillStyle='#1c241e';g.fillText(l.text,x,by+bh/2);
   });
-  download(c.toDataURL('image/png'),'terrablocks-photo.png');
+  download(c.toDataURL('image/png'),'mountain-makers-photo.png');
 });
 $('saveFile').addEventListener('click',()=>{
   const url=URL.createObjectURL(new Blob([JSON.stringify(encode())],{type:'application/json'}));
@@ -610,7 +610,7 @@ $('fileIn').addEventListener('change',e=>{
     const before=world.slice(),bw=W,bl=cloneLabels();let ok=false;
     try{ok=decode(JSON.parse(rd.result))}catch(_){}
     if(ok){undoStack.push({snap:before,W:bw,labels:bl});rebuild()}
-    else{hint.textContent='That file is not a TerraBlocks model. Choose a file saved from this app.';hint.classList.remove('gone');setTimeout(hideHint,6000)}
+    else{hint.textContent='That file is not a Mountain Makers model. Choose a file saved from this app.';hint.classList.remove('gone');setTimeout(hideHint,6000)}
     e.target.value='';
   };
   rd.readAsText(f);
