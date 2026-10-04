@@ -814,7 +814,7 @@ setupEl.querySelectorAll('[data-start2]').forEach(b=>b.addEventListener('click',
   starter(b.dataset.start2,false);setupEl.classList.remove('open');
 }));
 $('setupExample').addEventListener('click',()=>{starter('example',false);setupEl.classList.remove('open')});
-let needsSetup=!loaded;
+let needsSetup=false;
 openIntro();
 
 /* ---------- hold-down help ---------- */
@@ -979,6 +979,7 @@ $('fileIn').addEventListener('change',e=>{
 let loaded=false;
 try{const s=localStorage.getItem('terrablocks-world');if(s)loaded=decode(JSON.parse(s))}catch(_){}
 if(loaded){rebuild()}else{setupDims(40)}
+needsSetup=!loaded;
 
 (function loop(){updateCam();{const now=performance.now();climbers.forEach(c=>c.tick(now));eagle.tick(now);trollTick(now)}renderer.render(scene,camera);placeLabels();requestAnimationFrame(loop)})();
 })();
