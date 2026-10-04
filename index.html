@@ -60,13 +60,27 @@
     background:var(--slate);color:var(--paper);padding:7px 14px;border-radius:20px;font-size:13.5px;pointer-events:none;
     transition:opacity .6s;max-width:92vw;text-align:center}
   #hint.gone{opacity:0}
+  #setup{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;background:rgba(28,36,30,.6);padding:16px}
+  #setup.open{display:flex}
+  .setupCard{background:var(--paper);border:3px solid var(--slate);border-radius:14px;box-shadow:5px 5px 0 var(--slate);
+    width:min(440px,100%);padding:22px 24px;display:none}
+  .setupCard.show{display:block}
+  .setupCard h2{margin:0 0 4px;font-size:22px}
+  .setupCard p{margin:0 0 16px;font-size:15px;color:#55604f}
+  .setupGrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:10px}
+  .setupGrid button{border:2px solid var(--slate);background:#fff;padding:12px 10px;text-align:left;border-radius:9px}
+  .setupGrid button b{display:block;font-size:15px}
+  .setupGrid button small{font-weight:400;color:#55604f;font-size:12.5px}
+  #setupExample{width:100%;border:2px solid var(--contour);background:var(--marker);border-radius:9px;padding:12px;margin-top:4px;font-size:15px}
+  #setupBack{border:2px solid var(--slate);background:transparent}
   button,label{-webkit-touch-callout:none}
   #tip{position:fixed;display:none;z-index:50;pointer-events:none;background:var(--slate);color:var(--paper);
     padding:9px 13px;border-radius:9px;font-size:14px;line-height:1.35;max-width:250px;box-shadow:3px 3px 0 rgba(0,0,0,.25)}
   #tip b{color:var(--marker);display:block;margin-bottom:2px}
   #credit{position:fixed;z-index:1;right:22px;top:calc(76px + env(safe-area-inset-top,0px));font-size:14px;font-weight:700;font-style:italic;
     color:#000;opacity:.8;pointer-events:none;letter-spacing:.4px;animation:drift 7s ease-in-out infinite}
-  #credit{text-align:right;max-width:min(300px,60vw)}
+  #credit{text-align:right;max-width:min(350px,70vw);display:flex;align-items:center;gap:9px}
+  #avatar{width:42px;height:42px;border-radius:50%;object-fit:cover;flex:0 0 auto;opacity:.85;border:2px solid rgba(43,58,46,.5)}
   #credit span{display:block;font-size:12px;font-weight:400;margin-top:2px;line-height:1.3}
   @keyframes drift{0%,100%{transform:translateY(0)}50%{transform:translateY(7px)}}
   @media (prefers-reduced-motion:reduce){#credit{animation:none}}
@@ -122,6 +136,7 @@
 
 <div id="newMenu" class="panel menu">
   <p>Start a new model. You can undo this.</p>
+  <button data-start="example">Example mountain range</button>
   <button data-start="flat">Flat land</button>
   <button data-start="layers">Rock layers</button>
   <button data-start="sea">Land and sea</button>
@@ -159,8 +174,33 @@
 </label>
 
 <div id="palette" class="panel" role="group" aria-label="Blocks"></div>
-<div id="credit">Created by Mr Andy<span>&lsquo;You are not within the mountains, the mountains are within you&rsquo;</span></div>
+<div id="credit"><div>Created by Mr Andy<span>&lsquo;You are not within the mountains, the mountains are within you&rsquo;</span></div><img id="avatar" alt="" src="data:image/jpeg;base64,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"></div>
 <div id="tip" role="tooltip"></div>
+<div id="setup" role="dialog" aria-modal="true" aria-labelledby="setupTitle1">
+  <div id="setupCard1" class="setupCard show">
+    <h2 id="setupTitle1">Choose your land size</h2>
+    <p>How much space do you want to build on?</p>
+    <div class="setupGrid">
+      <button data-size="40"><b>Small</b><small>40 by 40</small></button>
+      <button data-size="56"><b>Medium</b><small>56 by 56</small></button>
+      <button data-size="72"><b>Large</b><small>72 by 72</small></button>
+      <button data-size="96"><b>Extra large</b><small>96 by 96</small></button>
+    </div>
+    <button id="setupExample">Play the example mountain range instead</button>
+  </div>
+  <div id="setupCard2" class="setupCard">
+    <h2>Choose your starting land</h2>
+    <p>You can change this later with the New button.</p>
+    <div class="setupGrid">
+      <button data-start2="flat"><b>Flat land</b><small>Grass and soil</small></button>
+      <button data-start2="layers"><b>Rock layers</b><small>Build your mountain up</small></button>
+      <button data-start2="sea"><b>Land and sea</b><small>Coast with an island</small></button>
+      <button data-start2="empty"><b>Empty</b><small>Start from nothing</small></button>
+    </div>
+    <button id="setupBack">Back</button>
+  </div>
+</div>
+
 <div id="intro" role="dialog" aria-modal="true" aria-labelledby="introTitle">
   <div id="introCard">
     <span class="num" id="introNum"></span>
@@ -421,12 +461,17 @@ const climbers=[
   makeClimber({minTop:14,step:1,uphill:2.2,dur:650,pause:1500,lift:.25,
     msg:'A mountaineer has arrived! Your mountain is 15 blocks high.',
     build(box){
-      const jacket=lam(0xd23a2a),trousers=lam(0x2f4f8a),skin=lam(0xe2b48c),helmet=lam(0xffcf33),boot=lam(0x33302c),pack=lam(0x3f7a4a),steel=lam(0xb9c0c7);
+      const jacket=lam(0x1f2a44),trousers=lam(0x2b2f3a),skin=lam(0xe0ac84),hair=lam(0x2e2019),boot=lam(0x33302c),pack=lam(0x3f7a4a),
+            steel=lam(0xb9c0c7),shirt=lam(0xf4f4f1),strap=lam(0x9aa0a6),frame=lam(0x15171a),lens=lam(0xcfe3ee);
       [.1,-.1].forEach(z=>{box(.14,.34,.14,0,.25,z,trousers);box(.18,.1,.15,.02,.05,z,boot)});
-      box(.24,.4,.38,0,.62,0,jacket);
+      box(.24,.4,.38,0,.62,0,jacket);                                   /* navy blazer */
+      box(.02,.34,.12,.125,.64,0,shirt);                                /* white shirt */
+      box(.02,.2,.025,.137,.7,.035,strap);box(.02,.2,.025,.137,.7,-.035,strap);box(.02,.06,.07,.137,.56,0,shirt); /* staff lanyard */
       box(.1,.36,.1,0,.62,.25,jacket);box(.1,.36,.1,.06,.64,-.25,jacket);
-      box(.24,.24,.24,0,.95,0,skin);box(.3,.1,.3,0,1.1,0,helmet);
-      box(.04,.04,.04,.13,.98,.06,boot);box(.04,.04,.04,.13,.98,-.06,boot);
+      box(.24,.24,.24,0,.95,0,skin);                                    /* head */
+      box(.27,.08,.27,0,1.1,0,hair);box(.06,.2,.27,-.11,.98,0,hair);    /* dark hair */
+      box(.05,.1,.22,.11,.87,0,hair);box(.16,.1,.03,.03,.87,.115,hair);box(.16,.1,.03,.03,.87,-.115,hair); /* beard */
+      box(.02,.07,.23,.125,.99,0,frame);box(.022,.045,.075,.128,.99,.055,lens);box(.022,.045,.075,.128,.99,-.055,lens); /* glasses */
       box(.16,.34,.3,-.2,.64,0,pack);
       box(.04,.6,.04,.14,.4,-.3,boot);box(.2,.05,.05,.14,.7,-.3,steel);
     }})
@@ -752,10 +797,24 @@ function showStep(){
   $('introNext').textContent=step===STEPS.length-1?'Start building':'Next';
 }
 function openIntro(){step=0;showStep();intro.classList.add('open');hideHint()}
-$('introNext').addEventListener('click',()=>{if(step<STEPS.length-1){step++;showStep()}else intro.classList.remove('open')});
+$('introNext').addEventListener('click',()=>{if(step<STEPS.length-1){step++;showStep()}else{intro.classList.remove('open');if(needsSetup){needsSetup=false;openSetup()}}});
 $('introBack').addEventListener('click',()=>{if(step>0){step--;showStep()}});
 $('introSkip').addEventListener('click',()=>intro.classList.remove('open'));
 $('helpBtn').addEventListener('click',()=>{closeNew();openIntro()});
+
+/* first-run setup: size, then starting land (skipped if a saved model was found) */
+const setupEl=$('setup');let pendingSize=40;
+function openSetup(){$('setupCard1').classList.add('show');$('setupCard2').classList.remove('show');setupEl.classList.add('open')}
+setupEl.querySelectorAll('[data-size]').forEach(b=>b.addEventListener('click',()=>{
+  pendingSize=+b.dataset.size;$('setupCard1').classList.remove('show');$('setupCard2').classList.add('show');
+}));
+$('setupBack').addEventListener('click',()=>{$('setupCard2').classList.remove('show');$('setupCard1').classList.add('show')});
+setupEl.querySelectorAll('[data-start2]').forEach(b=>b.addEventListener('click',()=>{
+  if(W!==pendingSize)setupDims(pendingSize);
+  starter(b.dataset.start2,false);setupEl.classList.remove('open');
+}));
+$('setupExample').addEventListener('click',()=>{starter('example',false);setupEl.classList.remove('open')});
+let needsSetup=!loaded;
 openIntro();
 
 /* ---------- hold-down help ---------- */
@@ -795,7 +854,9 @@ document.addEventListener('pointerout',e=>{if(e.pointerType==='mouse'&&tipTarget
 function fillLayer(y,t,x0,x1){for(let z=0;z<D;z++)for(let x=(x0||0);x<(x1===undefined?W:x1);x++)world[idx(x,y,z)]=t}
 function starter(kind,undoable){
   if(undoable)undoStack.push({snap:world.slice(),W:W,labels:cloneLabels()});
+  if(kind==='example'&&W!==96)setupDims(96);
   world=new Uint8Array(W*H*D);labels=[];renderLabels();resetTroll(false);
+  if(kind==='example'){genExample();renderLabels();setView('3d')}
   if(kind==='flat'){fillLayer(0,2);fillLayer(1,1)}
   if(kind==='layers'){[9,9,7,6,5,3,2,1].forEach((t,y)=>fillLayer(y,t))}
   if(kind==='sea'){
@@ -804,6 +865,52 @@ function starter(kind,undoable){
     fillLayer(2,4,W/2,W);fillLayer(3,12,W/2,W);fillLayer(4,12,W/2,W);
   }
   cut=D-1;$('cut').value=cut;rebuild();
+  if(kind==='example')say('Explore this example. Turn it, zoom in, and try the Slice slider to see the folded rock layers inside.',10000);
+}
+/* example fold-mountain range, generated the same way every time; peak kept below troll height */
+function hash2(x,z){const n=Math.sin(x*127.1+z*311.7)*43758.5453;return n-Math.floor(n)}
+function vnoise(x,z){
+  const xi=Math.floor(x),zi=Math.floor(z),fx=x-xi,fz=z-zi,sx=fx*fx*(3-2*fx),sz=fz*fz*(3-2*fz);
+  const a=hash2(xi,zi),b=hash2(xi+1,zi),c=hash2(xi,zi+1),d=hash2(xi+1,zi+1);
+  return a+(b-a)*sx+(c-a)*sz+(a-b-c+d)*sx*sz;
+}
+function fbm(x,z){let v=0,amp=.5,f=1;for(let o=0;o<4;o++){v+=amp*vnoise(x*f,z*f);amp*=.5;f*=2}return v/.9375}
+function genExample(){
+  const WL=5,SEQ=[9,7,6,5,6,7,5],N=W*D,mt=new Float32Array(N),mask=new Float32Array(N),hs=new Int16Array(N);let mx=0;
+  for(let z=0;z<D;z++)for(let x=0;x<W;x++){
+    const u=x/(W-1),v=z/(D-1),zc=.5+.17*Math.sin(u*5.2+.6),dd=Math.abs(v-zc);
+    const m=Math.exp(-Math.pow(dd/.2,2))*Math.pow(Math.sin(Math.PI*Math.min(1,Math.max(0,u*1.08-.04))),.7);
+    const r=1-Math.abs(2*fbm(x*.06+3,z*.06+9)-1),k=x+W*z;
+    mask[k]=m;mt[k]=m*(.3+.7*r);if(mt[k]>mx)mx=mt[k];
+  }
+  let sum=0;
+  for(let z=0;z<D;z++)for(let x=0;x<W;x++){
+    const k=x+W*z,base=3+4.5*fbm(x*.05+40,z*.05+40);
+    const h=Math.max(2,Math.min(33,Math.round(base+mt[k]/mx*27)));hs[k]=h;if(h>hs[sum])sum=k;
+    for(let y=0;y<h;y++){
+      const depth=h-1-y;let t=SEQ[Math.floor((y-.5*(h-6)+42)/3)%SEQ.length];
+      if(y<2)t=9;
+      if(h<21&&depth<3)t=depth===0?(h<=WL?4:1):depth===1?2:3;
+      if(h>=27&&depth<(h>=30?2:1))t=13;
+      world[idx(x,y,z)]=t;
+    }
+    for(let y=h;y<WL;y++)world[idx(x,y,z)]=12;
+  }
+  for(let z=2;z<D-2;z++)for(let x=2;x<W-2;x++){
+    const h=hs[x+W*z];if(h<=WL||h>=21)continue;
+    const r=hash2(x*3.1+7,z*5.3+11),st=h<14?(r<.03?0:-1):h<18?(r<.035?1:-1):(r<.03?2:-1);
+    if(st<0)continue;
+    STAMPS[st].cells.forEach(q=>{const X=x+q[0],Y=h+q[1],Z=z+q[2];if(inb(X,Y,Z)&&!world[idx(X,Y,Z)])world[idx(X,Y,Z)]=q[3]});
+  }
+  const sx=sum%W,sz=Math.floor(sum/W),best=(score)=>{let b=-1,bs=-1e9;for(let k=0;k<N;k++){const v=score(k,k%W,Math.floor(k/W));if(v>bs){bs=v;b=k}}return bs>-1e8?b:-1};
+  const near=(x,z)=>-Math.hypot(x-sx,z-sz);
+  const add=(k,text,y)=>{if(k>=0)labels.push({x:k%W,y:y===undefined?hs[k]-1:y,z:Math.floor(k/W),text:text})};
+  add(sum,'Summit');
+  add(best((k,x,z)=>Math.hypot(x-sx,z-sz)>22?hs[k]:-1e9),'Ridge');
+  add(best((k,x,z)=>hs[k]===27?near(x,z):-1e9),'Snow line');
+  add(best((k,x,z)=>hs[k]===20?near(x,z):-1e9),'Tree line');
+  add(best((k,x,z)=>mask[k]>.1&&mask[k]<.3&&hs[k]>WL?-hs[k]+near(x,z)*.01:-1e9),'Valley');
+  add(best((k)=>hs[k]<WL?-hs[k]:-1e9),'Lake',WL-1);
 }
 function encode(){
   const out=[];let prev=world[0],n=0;
@@ -844,6 +951,11 @@ $('photo').addEventListener('click',()=>{
   g.fillStyle="rgba(0,0,0,.8)";g.fillText("Created by Mr Andy",c.width-16*k,22*k);
   g.font='italic '+10.5*k+'px "Trebuchet MS",sans-serif';
   g.fillText('\u2018You are not within the mountains, the mountains are within you\u2019',c.width-16*k,38*k);
+  const av=$('avatar');
+  if(av&&av.complete&&av.naturalWidth){
+    const d=30*k,ax=c.width-16*k-d,ay=48*k;
+    g.save();g.globalAlpha=.85;g.beginPath();g.arc(ax+d/2,ay+d/2,d/2,0,Math.PI*2);g.clip();g.drawImage(av,ax,ay,d,d);g.restore();
+  }
   download(c.toDataURL('image/png'),'mountain-makers-photo.png');
 });
 $('saveFile').addEventListener('click',()=>{
@@ -866,7 +978,7 @@ $('fileIn').addEventListener('change',e=>{
 
 let loaded=false;
 try{const s=localStorage.getItem('terrablocks-world');if(s)loaded=decode(JSON.parse(s))}catch(_){}
-if(loaded)rebuild();else{setupDims(40);starter('layers',false)}
+if(loaded){rebuild()}else{setupDims(40)}
 
 (function loop(){updateCam();{const now=performance.now();climbers.forEach(c=>c.tick(now));eagle.tick(now);trollTick(now)}renderer.render(scene,camera);placeLabels();requestAnimationFrame(loop)})();
 })();
