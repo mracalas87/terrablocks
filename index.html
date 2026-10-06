@@ -73,6 +73,16 @@
   .setupGrid button small{font-weight:400;color:#55604f;font-size:12.5px}
   #setupExample{width:100%;border:2px solid var(--contour);background:var(--marker);border-radius:9px;padding:12px;margin-top:4px;font-size:15px}
   #setupBack{border:2px solid var(--slate);background:transparent}
+  #mapOverlay{position:fixed;inset:0;z-index:55;display:none;align-items:center;justify-content:center;background:rgba(28,36,30,.78);padding:14px}
+  #mapOverlay.open{display:flex}
+  #mapCard{background:var(--paper);border:3px solid var(--slate);border-radius:14px;box-shadow:5px 5px 0 var(--slate);
+    max-width:96vw;max-height:94vh;padding:14px;display:flex;flex-direction:column;align-items:center;gap:8px;overflow:auto}
+  #mapCard h2{margin:0;font-size:18px}
+  #mapCanvas{border:2px solid var(--slate);border-radius:6px;display:block;touch-action:none}
+  #mapLegend{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;font-size:12px;font-weight:700}
+  #mapLegend span{display:flex;align-items:center;gap:5px}
+  #mapLegend i{width:13px;height:13px;border-radius:3px;display:inline-block;border:1px solid rgba(43,58,46,.4)}
+  #mapClose{align-self:flex-end;border:2px solid var(--slate)}
   button,label{-webkit-touch-callout:none}
   #tip{position:fixed;display:none;z-index:50;pointer-events:none;background:var(--slate);color:var(--paper);
     padding:9px 13px;border-radius:9px;font-size:14px;line-height:1.35;max-width:250px;box-shadow:3px 3px 0 rgba(0,0,0,.25)}
@@ -126,6 +136,7 @@
   <button id="undo" data-tip="Undo|Takes back your last change. Tap again to go back further.">Undo</button>
   <span class="gap"></span>
   <button id="helpBtn" data-tip="Help|Shows the instructions for this task again.">Help</button>
+  <button id="mapBtn" data-tip="Map|Shows a live map of your model from above, coloured by height, with contour lines like a real topographic map.">Map</button>
   <button id="sizeBtn" data-tip="Size|Makes the land bigger or smaller. Your model stays in the middle.">Size</button>
   <button id="newBtn" data-tip="New|Starts a new model from flat land, rock layers, land and sea, or nothing.">New</button>
   <button id="photo" data-tip="Take photo|Saves a picture of this view, with your labels, to show your work.">Take photo</button>
@@ -176,6 +187,23 @@
 <div id="palette" class="panel" role="group" aria-label="Blocks"></div>
 <div id="credit"><div>Created by Mr Andy<span>&lsquo;You are not within the mountains, the mountains are within you&rsquo;</span></div><img id="avatar" alt="" src="data:image/jpeg;base64,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"></div>
 <div id="tip" role="tooltip"></div>
+<div id="mapOverlay" role="dialog" aria-modal="true" aria-labelledby="mapTitle">
+  <div id="mapCard">
+    <button id="mapClose">Close</button>
+    <h2 id="mapTitle">Topography map</h2>
+    <canvas id="mapCanvas"></canvas>
+    <div id="mapLegend">
+      <span><i style="background:#2f6fae"></i>Water</span>
+      <span><i style="background:#3d7a3a"></i>Low ground</span>
+      <span><i style="background:#b0a354"></i>Mid slopes</span>
+      <span><i style="background:#786e6c"></i>High rock</span>
+      <span><i style="background:#fafafc"></i>Peak</span>
+      <span><i style="background:#2b3a2e"></i>Contour line, every 4 blocks of height</span>
+      <span><i style="background:#ffcf33"></i>Your labels</span>
+    </div>
+  </div>
+</div>
+
 <div id="setup" role="dialog" aria-modal="true" aria-labelledby="setupTitle1">
   <div id="setupCard1" class="setupCard show">
     <h2 id="setupTitle1">Choose your land size</h2>
@@ -345,7 +373,7 @@ function resizeLand(n){
     if(nx>=0&&nx<W&&nz>=0&&nz<D)w[idx(nx,y,nz)]=t;
   }
   world=w;labels=labels.map(l=>({x:l.x+off,y:l.y,z:l.z+off,text:l.text})).filter(l=>inb(l.x,l.y,l.z));
-  renderLabels();setView('3d');rebuild();
+  captureBaseline();renderLabels();setView('3d');rebuild();
 }
 
 const ghost=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1.02,1.02,1.02)),
@@ -379,6 +407,7 @@ function rebuild(){
   }
   if(grown)pickables=[ground].concat(meshes.slice(1));
   checkClimbers();
+  if(mapOpen)drawMap();
   scheduleSave();
 }
 
@@ -388,6 +417,26 @@ function topY(x,z){
   return 0;
 }
 function standPos(x,z,v){return v.set(x+.5-W/2,Math.max(0,topY(x,z)),z+.5-D/2)}
+let baseline=new Int16Array(W*D);
+function captureBaseline(){
+  baseline=new Int16Array(W*D);
+  for(let z=0;z<D;z++)for(let x=0;x<W;x++)baseline[x+W*z]=Math.max(0,topY(x,z));
+}
+/* The footprint is how much of the platform has been raised into a genuine mountain
+   shape, not just one tall column. A column counts once it has been built up to at
+   least half the height of the tallest raised point. */
+function footprintArea(){
+  let peakRise=0;
+  for(let z=0;z<D;z++)for(let x=0;x<W;x++){
+    const d=Math.max(0,topY(x,z))-baseline[x+W*z];if(d>peakRise)peakRise=d;
+  }
+  if(peakRise<=0)return 0;
+  const half=Math.max(1,Math.ceil(peakRise/2));let area=0;
+  for(let z=0;z<D;z++)for(let x=0;x<W;x++){
+    if(Math.max(0,topY(x,z))-baseline[x+W*z]>=half)area++;
+  }
+  return area;
+}
 const lam=c=>new THREE.MeshLambertMaterial({color:c});
 function makeClimber(o){
   const g=new THREE.Group();g.visible=false;g.scale.setScalar(o.scale||1);scene.add(g);
@@ -395,8 +444,8 @@ function makeClimber(o){
   const c={on:false,x:0,z:0,hop:false,t0:0,next:0,from:new THREE.Vector3(),to:new THREE.Vector3()};
   return{
     c:c,
-    check(peak){
-      const top=peak>=0?Math.floor(peak/(W*D)):-1,tall=o.when?o.when(top):top>=o.minTop;
+    check(peak,area){
+      const tall=o.when?o.when(area):area>=o.minArea;
       if(peak<0)peak=idx(W>>1,0,D>>1);
       if(!tall){c.on=false;g.visible=false;return}
       if(!c.on||!inb(c.x,0,c.z)){
@@ -437,8 +486,8 @@ function makeClimber(o){
   };
 }
 const climbers=[
-  makeClimber({minTop:19,step:1,uphill:1,dur:600,pause:1300,lift:.2,
-    msg:'A grizzly bear has wandered in! Your mountain is 20 blocks high.',
+  makeClimber({minArea:150,step:1,uphill:1,dur:600,pause:1300,lift:.2,
+    msg:'A grizzly bear has wandered in! Your mountain footprint has reached 150 blocks squared.',
     build(box){
       const fur=lam(0x6b4423),light=lam(0xa67c52),dark=lam(0x2a1c12);
       box(1,.5,.52,0,.52,0,fur);box(.34,.16,.44,.24,.82,0,fur);
@@ -448,8 +497,8 @@ const climbers=[
       box(.1,.1,.12,-.54,.62,0,fur);
       [[.33,.16],[.33,-.16],[-.33,.16],[-.33,-.16]].forEach(p=>{box(.2,.3,.18,p[0],.15,p[1],fur)});
     }}),
-  makeClimber({minTop:24,step:2,uphill:1.6,dur:450,pause:800,lift:.5,
-    msg:'A mountain goat has moved in! Your mountain is 25 blocks high.',
+  makeClimber({minArea:200,step:2,uphill:1.6,dur:450,pause:800,lift:.5,
+    msg:'A mountain goat has moved in! Your mountain footprint has reached 200 blocks squared.',
     build(box){
       const coat=lam(0xf4f1e8),dark=lam(0x4a3d30),horn=lam(0x8a7658);
       box(.7,.36,.34,0,.5,0,coat);box(.26,.26,.26,.42,.72,0,coat);box(.12,.1,.14,.58,.68,0,coat);box(.06,.14,.06,.5,.55,0,coat);
@@ -458,8 +507,8 @@ const climbers=[
       box(.1,.1,.1,-.38,.62,0,coat);
       [[.24,.11],[.24,-.11],[-.24,.11],[-.24,-.11]].forEach(p=>{box(.1,.26,.1,p[0],.2,p[1],coat);box(.11,.08,.11,p[0],.04,p[1],dark)});
     }}),
-  makeClimber({minTop:14,step:1,uphill:2.2,dur:650,pause:1500,lift:.25,
-    msg:'A mountaineer has arrived! Your mountain is 15 blocks high.',
+  makeClimber({minArea:100,step:1,uphill:2.2,dur:650,pause:1500,lift:.25,
+    msg:'A mountaineer has arrived! Your mountain footprint has reached 100 blocks squared.',
     build(box){
       const jacket=lam(0x1f2a44),trousers=lam(0x2b2f3a),skin=lam(0xe0ac84),hair=lam(0x2e2019),boot=lam(0x33302c),pack=lam(0x3f7a4a),
             steel=lam(0xb9c0c7),shirt=lam(0xf4f4f1),strap=lam(0x9aa0a6),frame=lam(0x15171a),lens=lam(0xcfe3ee);
@@ -476,7 +525,7 @@ const climbers=[
       box(.04,.6,.04,.14,.4,-.3,boot);box(.2,.05,.05,.14,.7,-.3,steel);
     }})
 ];
-/* eagle: circles the summit when the model reaches 30 blocks */
+/* eagle: circles the summit once the footprint reaches 250 blocks squared */
 const eagle=(function(){
   const g=new THREE.Group(),tilt=new THREE.Group(),wl=new THREE.Group(),wr=new THREE.Group();
   g.add(tilt);tilt.add(wl,wr);g.visible=false;scene.add(g);tilt.rotation.x=.3;
@@ -488,11 +537,11 @@ const eagle=(function(){
   wr.position.set(0,.08,-.13);add(wr,.42,.05,1.05,0,0,-.52,brown);
   const c={on:false,cx:0,cy:0,cz:0,pz:0};
   return{
-    check(peak){
-      if(!(peak>=0&&Math.floor(peak/(W*D))>=29)){c.on=false;g.visible=false;return}
+    check(peak,area){
+      if(!(peak>=0&&area>=250)){c.on=false;g.visible=false;return}
       c.cy=Math.floor(peak/(W*D))+1;
       c.pz=Math.floor(peak/W)%D;c.cx=peak%W+.5-W/2;c.cz=c.pz+.5-D/2;
-      if(!c.on){c.on=true;say('An eagle is circling your summit! Your mountain is 30 blocks high.')}
+      if(!c.on){c.on=true;say('An eagle is circling your summit! Your mountain footprint has reached 250 blocks squared.')}
     },
     tick(now){
       if(!c.on)return;
@@ -504,13 +553,13 @@ const eagle=(function(){
     }
   };
 })();
-/* troll: wakes at 35 blocks and smashes 10 blocks a minute until the gem (appears at 40) is collected */
+/* troll: wakes once the footprint reaches 300 blocks squared; smashes 10 blocks a minute until the gem (appears at 350) is collected */
 const troll={awake:false,beaten:false,last:0};
 const trollC=makeClimber({step:3,uphill:1.4,dur:900,pause:2200,lift:.3,scale:2.3,msgMs:12000,
-  msg:'A troll has woken up! He smashes 10 blocks every minute. Build to 40 blocks high to find the gem that sends him away.',
-  when(top){
+  msg:'A troll has woken up! He smashes 10 blocks every minute. Grow your footprint to 350 blocks squared to find the gem that sends him away.',
+  when(area){
     if(troll.beaten)return false;
-    if(top>=34&&!troll.awake){troll.awake=true;troll.last=performance.now()}
+    if(area>=300&&!troll.awake){troll.awake=true;troll.last=performance.now()}
     return troll.awake;
   },
   build(box){
@@ -555,8 +604,9 @@ function trollTick(now){
 function checkClimbers(){
   let peak=-1;
   for(let i=world.length-1;i>=0;i--)if(world[i]&&!BLOCKS[world[i]].water){peak=i;break}
-  climbers.forEach(c=>c.check(peak));eagle.check(peak);
-  if(troll.awake&&!gem.visible&&peak>=0&&Math.floor(peak/(W*D))>=39){
+  const area=footprintArea();
+  climbers.forEach(c=>c.check(peak,area));eagle.check(peak,area);
+  if(troll.awake&&!gem.visible&&area>=350){
     const gy=Math.floor(peak/(W*D))+3.6;
     gem.userData.y=gy;gem.position.set(peak%W+.5-W/2,gy,Math.floor(peak/W)%D+.5-D/2);gem.visible=true;
     say('A gem has appeared above your summit! Tap it to send the troll away.',10000);
@@ -762,7 +812,7 @@ $('zout').addEventListener('click',()=>cam.r*=1.25);
 $('cut').addEventListener('input',e=>{cut=+e.target.value;rebuild()});
 const newMenu=$('newMenu');
 const sizeMenu=$('sizeMenu');
-function closeNew(){newMenu.classList.remove('open');sizeMenu.classList.remove('open');labelEdit.classList.remove('open');labelText.blur()}
+function closeNew(){newMenu.classList.remove('open');sizeMenu.classList.remove('open');labelEdit.classList.remove('open');labelText.blur();mapOpen=false;mapOverlay.classList.remove('open')}
 $('newBtn').addEventListener('click',()=>{sizeMenu.classList.remove('open');newMenu.classList.toggle('open')});
 $('sizeBtn').addEventListener('click',()=>{newMenu.classList.remove('open');sizeMenu.classList.toggle('open')});
 sizeMenu.querySelectorAll('[data-size]').forEach(b=>b.addEventListener('click',()=>{resizeLand(+b.dataset.size);closeNew()}));
@@ -850,6 +900,51 @@ document.addEventListener('pointerover',e=>{
 });
 document.addEventListener('pointerout',e=>{if(e.pointerType==='mouse'&&tipTarget(e)){clearTimeout(tipTimer);hideTip()}});
 
+/* ---------- topography map ---------- */
+let mapOpen=false;
+function elevColor(h){
+  const t=Math.max(0,Math.min(1,h/Math.max(1,H-1)));
+  const stops=[[0,[61,122,58]],[.3,[150,163,84]],[.55,[176,156,92]],[.75,[120,108,104]],[1,[250,250,252]]];
+  for(let i=0;i<stops.length-1;i++){
+    const a=stops[i],b=stops[i+1];
+    if(t<=b[0]){const k=(t-a[0])/((b[0]-a[0])||1),ac=a[1],bc=b[1];
+      return 'rgb('+ac.map((v,n)=>Math.round(v+(bc[n]-v)*k)).join(',')+')';}
+  }
+  return 'rgb(250,250,252)';
+}
+function drawMap(){
+  const cv=$('mapCanvas'),ctx=cv.getContext('2d');
+  const avail=Math.min(window.innerWidth,window.innerHeight)-150;
+  const size=Math.max(240,Math.min(640,avail));
+  cv.width=size;cv.height=size;const cell=size/W;
+  for(let z=0;z<D;z++)for(let x=0;x<W;x++){
+    let water=false,h=0;
+    for(let y=H-1;y>=0;y--){const t=world[idx(x,y,z)];if(t){water=BLOCKS[t].water;h=y+1;break}}
+    ctx.fillStyle=water?'#2f6fae':elevColor(h);
+    ctx.fillRect(x*cell,z*cell,cell+.6,cell+.6);
+  }
+  ctx.strokeStyle='rgba(43,58,46,.55)';ctx.lineWidth=Math.max(.6,cell*.1);const band=4;
+  for(let z=0;z<D;z++)for(let x=0;x<W;x++){
+    const h=topY(x,z);
+    if(x>0&&Math.floor(h/band)!==Math.floor(topY(x-1,z)/band)){
+      ctx.beginPath();ctx.moveTo(x*cell,z*cell);ctx.lineTo(x*cell,(z+1)*cell);ctx.stroke();
+    }
+    if(z>0&&Math.floor(h/band)!==Math.floor(topY(x,z-1)/band)){
+      ctx.beginPath();ctx.moveTo(x*cell,z*cell);ctx.lineTo((x+1)*cell,z*cell);ctx.stroke();
+    }
+  }
+  ctx.textBaseline='middle';ctx.font='bold '+Math.max(9,cell*1.3)+'px "Trebuchet MS",sans-serif';
+  labels.forEach(l=>{
+    const px=l.x*cell+cell/2,pz=l.z*cell+cell/2,rad=Math.max(2.5,cell*.3);
+    ctx.beginPath();ctx.arc(px,pz,rad,0,Math.PI*2);ctx.fillStyle='#ffcf33';ctx.fill();
+    ctx.lineWidth=1;ctx.strokeStyle='#1c241e';ctx.stroke();
+    ctx.fillStyle='#1c241e';ctx.fillText(l.text,px+rad+3,pz);
+  });
+}
+const mapOverlay=$('mapOverlay');
+$('mapBtn').addEventListener('click',()=>{closeNew();mapOpen=true;mapOverlay.classList.add('open');drawMap()});
+$('mapClose').addEventListener('click',()=>{mapOpen=false;mapOverlay.classList.remove('open')});
+
 /* ---------- starters, saving ---------- */
 function fillLayer(y,t,x0,x1){for(let z=0;z<D;z++)for(let x=(x0||0);x<(x1===undefined?W:x1);x++)world[idx(x,y,z)]=t}
 function starter(kind,undoable){
@@ -864,6 +959,7 @@ function starter(kind,undoable){
     fillLayer(2,5,0,W/2);fillLayer(3,2,0,W/2);fillLayer(4,1,0,W/2);
     fillLayer(2,4,W/2,W);fillLayer(3,12,W/2,W);fillLayer(4,12,W/2,W);
   }
+  captureBaseline();
   cut=D-1;$('cut').value=cut;rebuild();
   if(kind==='example')say('Explore this example. Turn it, zoom in, and try the Slice slider to see the folded rock layers inside.',10000);
 }
@@ -915,7 +1011,7 @@ function genExample(){
 function encode(){
   const out=[];let prev=world[0],n=0;
   for(let i=0;i<world.length;i++){if(world[i]===prev)n++;else{out.push(prev,n);prev=world[i];n=1}}
-  out.push(prev,n);return{app:'terrablocks',v:1,W:W,H:H,D:D,rle:out,labels:cloneLabels(),trollBeaten:troll.beaten};
+  out.push(prev,n);return{app:'terrablocks',v:1,W:W,H:H,D:D,rle:out,labels:cloneLabels(),trollBeaten:troll.beaten,baseline:Array.from(baseline)};
 }
 function decode(o){
   if(!o||o.app!=='terrablocks'||SIZES.indexOf(o.W)<0||o.D!==o.W||!(o.H>0&&o.H<=H)||!Array.isArray(o.rle))return false;
@@ -924,6 +1020,8 @@ function decode(o){
   if(p!==o.W*o.H*o.D)return false;
   if(o.W!==W||!ground)setupDims(o.W);
   world=w;resetTroll(o.trollBeaten);
+  if(Array.isArray(o.baseline)&&o.baseline.length===W*D)baseline=Int16Array.from(o.baseline);
+  else captureBaseline();
   labels=(Array.isArray(o.labels)?o.labels:[]).filter(l=>l&&typeof l.text==='string'&&inb(l.x,l.y,l.z)).slice(0,40)
     .map(l=>({x:l.x,y:l.y,z:l.z,text:l.text.slice(0,40)}));
   renderLabels();return true;
@@ -978,7 +1076,7 @@ $('fileIn').addEventListener('change',e=>{
 
 let loaded=false;
 try{const s=localStorage.getItem('terrablocks-world');if(s)loaded=decode(JSON.parse(s))}catch(_){}
-if(loaded){rebuild()}else{setupDims(40)}
+if(loaded){rebuild()}else{setupDims(40);captureBaseline()}
 needsSetup=!loaded;
 
 (function loop(){updateCam();{const now=performance.now();climbers.forEach(c=>c.tick(now));eagle.tick(now);trollTick(now)}renderer.render(scene,camera);placeLabels();requestAnimationFrame(loop)})();
