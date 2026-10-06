@@ -44,6 +44,8 @@
 
   #slice{left:10px;bottom:calc(118px + env(safe-area-inset-bottom,0px));padding:8px 12px;display:flex;align-items:center;gap:10px;font-weight:700;font-size:14px}
   #slice input{width:150px;accent-color:var(--contour)}
+  #footStat{left:10px;bottom:calc(74px + env(safe-area-inset-bottom,0px));padding:6px 12px;font-size:13px;font-weight:700}
+  #footStat b{color:var(--contour)}
 
   #palette{left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));padding:8px;display:flex;gap:8px;overflow-x:auto;touch-action:pan-x}
   .blk{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 6px 4px;min-width:72px;border-radius:8px;font-size:12.5px;font-weight:700;line-height:1.15}
@@ -180,6 +182,7 @@
   <button id="zout" data-tip="Zoom out|Moves further away to see the whole model." aria-label="Zoom out">&minus;</button>
 </div>
 
+<div id="footStat" class="panel" data-tip="Footprint|How many ground tiles your mountain covers, built up to at least half the height of your highest point. This is what unlocks each hidden character, not the total number of blocks you have placed."></div>
 <label id="slice" data-tip="Slice|Slide to cut through your model and see the layers inside, like a cross-section." class="panel">Slice
   <input type="range" id="cut" min="0" max="23" value="23" aria-label="Slice through the model">
 </label>
@@ -450,7 +453,9 @@ function makeClimber(o){
       if(!tall){c.on=false;g.visible=false;return}
       if(!c.on||!inb(c.x,0,c.z)){
         const fresh=!c.on;
-        c.on=true;c.hop=false;c.x=peak%W;c.z=Math.floor(peak/W)%D;
+        c.on=true;c.hop=false;
+        c.x=Math.max(0,Math.min(W-1,peak%W+(o.spawnDX||0)));
+        c.z=Math.max(0,Math.min(D-1,Math.floor(peak/W)%D+(o.spawnDZ||0)));
         standPos(c.x,c.z,g.position);c.next=performance.now()+o.pause;
         if(fresh)say(o.msg,o.msgMs);
       }
@@ -485,6 +490,20 @@ function makeClimber(o){
     }
   };
 }
+const GOAT_THRESHOLDS=[200,215,230,245],GOAT_OFFSETS=[[0,0],[2,1],[-2,1],[1,-2]],RAM_THRESHOLD=260;
+function buildGoat(box,big){
+  const coat=lam(0xf4f1e8),dark=lam(0x4a3d30),horn=lam(0x8a7658);
+  box(.7,.36,.34,0,.5,0,coat);box(.26,.26,.26,.42,.72,0,coat);box(.12,.1,.14,.58,.68,0,coat);box(.06,.14,.06,.5,.55,0,coat);
+  if(big){
+    box(.06,.3,.06,.34,.95,.11,horn);box(.06,.3,.06,.34,.95,-.11,horn);
+    box(.1,.07,.06,.3,1.2,.16,horn);box(.1,.07,.06,.3,1.2,-.16,horn);
+  }else{
+    box(.05,.2,.05,.36,.93,.08,horn);box(.05,.2,.05,.36,.93,-.08,horn);
+  }
+  box(.04,.04,.04,.52,.78,.14,dark);box(.04,.04,.04,.52,.78,-.14,dark);
+  box(.1,.1,.1,-.38,.62,0,coat);
+  [[.24,.11],[.24,-.11],[-.24,.11],[-.24,-.11]].forEach(p=>{box(.1,.26,.1,p[0],.2,p[1],coat);box(.11,.08,.11,p[0],.04,p[1],dark)});
+}
 const climbers=[
   makeClimber({minArea:150,step:1,uphill:1,dur:600,pause:1300,lift:.2,
     msg:'A grizzly bear has wandered in! Your mountain footprint has reached 150 blocks squared.',
@@ -497,16 +516,18 @@ const climbers=[
       box(.1,.1,.12,-.54,.62,0,fur);
       [[.33,.16],[.33,-.16],[-.33,.16],[-.33,-.16]].forEach(p=>{box(.2,.3,.18,p[0],.15,p[1],fur)});
     }}),
-  makeClimber({minArea:200,step:2,uphill:1.6,dur:450,pause:800,lift:.5,
-    msg:'A mountain goat has moved in! Your mountain footprint has reached 200 blocks squared.',
-    build(box){
-      const coat=lam(0xf4f1e8),dark=lam(0x4a3d30),horn=lam(0x8a7658);
-      box(.7,.36,.34,0,.5,0,coat);box(.26,.26,.26,.42,.72,0,coat);box(.12,.1,.14,.58,.68,0,coat);box(.06,.14,.06,.5,.55,0,coat);
-      box(.05,.2,.05,.36,.93,.08,horn);box(.05,.2,.05,.36,.93,-.08,horn);
-      box(.04,.04,.04,.52,.78,.14,dark);box(.04,.04,.04,.52,.78,-.14,dark);
-      box(.1,.1,.1,-.38,.62,0,coat);
-      [[.24,.11],[.24,-.11],[-.24,.11],[-.24,-.11]].forEach(p=>{box(.1,.26,.1,p[0],.2,p[1],coat);box(.11,.08,.11,p[0],.04,p[1],dark)});
-    }}),
+  /* a small herd: up to four goats as the footprint grows, then a big horned ram as the fifth */
+  ...GOAT_THRESHOLDS.map((th,i)=>makeClimber({minArea:th,step:2,uphill:1.6,dur:450,pause:800,lift:.5,
+    spawnDX:GOAT_OFFSETS[i][0],spawnDZ:GOAT_OFFSETS[i][1],
+    msg:i===0?'A mountain goat has moved in! Your mountain footprint has reached '+th+' blocks squared.'
+             :'Another mountain goat joins the herd! Your footprint has reached '+th+' blocks squared.',
+    build(box){buildGoat(box,false)}
+  })),
+  makeClimber({minArea:RAM_THRESHOLD,step:2,uphill:1.7,dur:420,pause:750,lift:.55,scale:1.4,
+    spawnDX:-2,spawnDZ:-2,
+    msg:'A huge ram with curling horns has taken over the herd! Your footprint has reached '+RAM_THRESHOLD+' blocks squared.',
+    build(box){buildGoat(box,true)}
+  }),
   makeClimber({minArea:100,step:1,uphill:2.2,dur:650,pause:1500,lift:.25,
     msg:'A mountaineer has arrived! Your mountain footprint has reached 100 blocks squared.',
     build(box){
@@ -605,6 +626,12 @@ function checkClimbers(){
   let peak=-1;
   for(let i=world.length-1;i>=0;i--)if(world[i]&&!BLOCKS[world[i]].water){peak=i;break}
   const area=footprintArea();
+  const NEXT=[[100,'the mountaineer'],[150,'the bear'],[200,'a goat'],[215,'another goat'],[230,'another goat'],[245,'another goat'],[250,'the eagle'],[260,'the ram'],[300,'the troll'],[350,'the gem']];
+  const fs=$('footStat');
+  if(fs){
+    const upNext=NEXT.find(n=>area<n[0]);
+    fs.innerHTML='Footprint: <b>'+area+'</b> blocks\u00b2'+(upNext?' &middot; '+(upNext[0]-area)+' more for '+upNext[1]:' &middot; everything unlocked');
+  }
   climbers.forEach(c=>c.check(peak,area));eagle.check(peak,area);
   if(troll.awake&&!gem.visible&&area>=350){
     const gy=Math.floor(peak/(W*D))+3.6;
