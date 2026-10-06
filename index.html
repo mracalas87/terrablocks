@@ -182,7 +182,7 @@
   <button id="zout" data-tip="Zoom out|Moves further away to see the whole model." aria-label="Zoom out">&minus;</button>
 </div>
 
-<div id="footStat" class="panel" data-tip="Footprint|How many ground tiles your mountain covers, built up to at least half the height of your highest point. This is what unlocks each hidden character, not the total number of blocks you have placed."></div>
+<div id="footStat" class="panel" data-tip="Blocks laid|How many blocks you have added since you started this model. This is what unlocks each hidden character."></div>
 <label id="slice" data-tip="Slice|Slide to cut through your model and see the layers inside, like a cross-section." class="panel">Slice
   <input type="range" id="cut" min="0" max="23" value="23" aria-label="Slice through the model">
 </label>
@@ -425,20 +425,16 @@ function captureBaseline(){
   baseline=new Int16Array(W*D);
   for(let z=0;z<D;z++)for(let x=0;x<W;x++)baseline[x+W*z]=Math.max(0,topY(x,z));
 }
-/* The footprint is how much of the platform has been raised into a genuine mountain
-   shape, not just one tall column. A column counts once it has been built up to at
-   least half the height of the tallest raised point. */
-function footprintArea(){
-  let peakRise=0;
+/* Blocks laid: every block the player has added above the ground they started on
+   (digging out the starting layers doesn't count against them). Resets whenever a
+   new model, a new size, or a different starting land is chosen. */
+function blocksPlaced(){
+  let n=0;
   for(let z=0;z<D;z++)for(let x=0;x<W;x++){
-    const d=Math.max(0,topY(x,z))-baseline[x+W*z];if(d>peakRise)peakRise=d;
+    const base=baseline[x+W*z];
+    for(let y=base;y<H;y++)if(world[idx(x,y,z)])n++;
   }
-  if(peakRise<=0)return 0;
-  const half=Math.max(1,Math.ceil(peakRise/2));let area=0;
-  for(let z=0;z<D;z++)for(let x=0;x<W;x++){
-    if(Math.max(0,topY(x,z))-baseline[x+W*z]>=half)area++;
-  }
-  return area;
+  return n;
 }
 const lam=c=>new THREE.MeshLambertMaterial({color:c});
 function makeClimber(o){
@@ -448,7 +444,7 @@ function makeClimber(o){
   return{
     c:c,
     check(peak,area){
-      const tall=o.when?o.when(area):area>=o.minArea;
+      const top=peak>=0?Math.floor(peak/(W*D)):-1,tall=o.when?o.when(area,top):area>=o.minArea;
       if(peak<0)peak=idx(W>>1,0,D>>1);
       if(!tall){c.on=false;g.visible=false;return}
       if(!c.on||!inb(c.x,0,c.z)){
@@ -506,7 +502,7 @@ function buildGoat(box,big){
 }
 const climbers=[
   makeClimber({minArea:150,step:1,uphill:1,dur:600,pause:1300,lift:.2,
-    msg:'A grizzly bear has wandered in! Your mountain footprint has reached 150 blocks squared.',
+    msg:'A grizzly bear has wandered in! You have laid 150 blocks.',
     build(box){
       const fur=lam(0x6b4423),light=lam(0xa67c52),dark=lam(0x2a1c12);
       box(1,.5,.52,0,.52,0,fur);box(.34,.16,.44,.24,.82,0,fur);
@@ -519,17 +515,17 @@ const climbers=[
   /* a small herd: up to four goats as the footprint grows, then a big horned ram as the fifth */
   ...GOAT_THRESHOLDS.map((th,i)=>makeClimber({minArea:th,step:2,uphill:1.6,dur:450,pause:800,lift:.5,
     spawnDX:GOAT_OFFSETS[i][0],spawnDZ:GOAT_OFFSETS[i][1],
-    msg:i===0?'A mountain goat has moved in! Your mountain footprint has reached '+th+' blocks squared.'
-             :'Another mountain goat joins the herd! Your footprint has reached '+th+' blocks squared.',
+    msg:i===0?'A mountain goat has moved in! You have laid '+th+' blocks.'
+             :'Another mountain goat joins the herd! You have laid '+th+' blocks.',
     build(box){buildGoat(box,false)}
   })),
   makeClimber({minArea:RAM_THRESHOLD,step:2,uphill:1.7,dur:420,pause:750,lift:.55,scale:1.4,
     spawnDX:-2,spawnDZ:-2,
-    msg:'A huge ram with curling horns has taken over the herd! Your footprint has reached '+RAM_THRESHOLD+' blocks squared.',
+    msg:'A huge ram with curling horns has taken over the herd! You have laid '+RAM_THRESHOLD+' blocks.',
     build(box){buildGoat(box,true)}
   }),
   makeClimber({minArea:100,step:1,uphill:2.2,dur:650,pause:1500,lift:.25,
-    msg:'A mountaineer has arrived! Your mountain footprint has reached 100 blocks squared.',
+    msg:'A mountaineer has arrived! You have laid 100 blocks.',
     build(box){
       const jacket=lam(0x1f2a44),trousers=lam(0x2b2f3a),skin=lam(0xe0ac84),hair=lam(0x2e2019),boot=lam(0x33302c),pack=lam(0x3f7a4a),
             steel=lam(0xb9c0c7),shirt=lam(0xf4f4f1),strap=lam(0x9aa0a6),frame=lam(0x15171a),lens=lam(0xcfe3ee);
@@ -546,8 +542,8 @@ const climbers=[
       box(.04,.6,.04,.14,.4,-.3,boot);box(.2,.05,.05,.14,.7,-.3,steel);
     }})
 ];
-/* eagle: circles the summit once the footprint reaches 250 blocks squared */
-const eagle=(function(){
+/* eagles: a small flock circles the summit once the mountain is over 20 blocks high */
+function makeEagle(radius,speed,phase,heightOffset){
   const g=new THREE.Group(),tilt=new THREE.Group(),wl=new THREE.Group(),wr=new THREE.Group();
   g.add(tilt);tilt.add(wl,wr);g.visible=false;scene.add(g);tilt.rotation.x=.3;
   const brown=lam(0x3b2a1e),white=lam(0xf7f5ee),yellow=lam(0xf2b01e);
@@ -558,29 +554,32 @@ const eagle=(function(){
   wr.position.set(0,.08,-.13);add(wr,.42,.05,1.05,0,0,-.52,brown);
   const c={on:false,cx:0,cy:0,cz:0,pz:0};
   return{
-    check(peak,area){
-      if(!(peak>=0&&area>=250)){c.on=false;g.visible=false;return}
-      c.cy=Math.floor(peak/(W*D))+1;
+    check(peak,area,fresh){
+      const top=peak>=0?Math.floor(peak/(W*D)):-1;
+      if(!(top>20)){c.on=false;g.visible=false;return}
+      c.cy=top+1+heightOffset;
       c.pz=Math.floor(peak/W)%D;c.cx=peak%W+.5-W/2;c.cz=c.pz+.5-D/2;
-      if(!c.on){c.on=true;say('An eagle is circling your summit! Your mountain footprint has reached 250 blocks squared.')}
+      if(!c.on){c.on=true;if(fresh)say('A flock of eagles is circling your summit! Your mountain is over 20 blocks high.')}
     },
     tick(now){
       if(!c.on)return;
       g.visible=c.pz<=cut;
-      const a=now/2600,r=5.5,f=.15+Math.sin(now/260)*.35;
-      g.position.set(c.cx+Math.cos(a)*r,c.cy+2.2+Math.sin(now/1700)*.6,c.cz+Math.sin(a)*r);
+      const a=now/2600*speed+phase,r=radius,f=.15+Math.sin(now/260+phase)*.35;
+      g.position.set(c.cx+Math.cos(a)*r,c.cy+2.2+Math.sin(now/1700+phase)*.6,c.cz+Math.sin(a)*r);
       g.rotation.y=Math.atan2(-Math.cos(a),-Math.sin(a));
       wl.rotation.x=-f;wr.rotation.x=f;
     }
   };
-})();
-/* troll: wakes once the footprint reaches 300 blocks squared; smashes 10 blocks a minute until the gem (appears at 350) is collected */
+}
+const eagles=[makeEagle(5.5,1,0,0),makeEagle(7.5,-.7,2.1,.8),makeEagle(4,1.3,4.2,1.6)];
+let eagleFlockOn=false;
+/* troll: wakes once the mountain is 30 blocks high; smashes 10 blocks a minute until the gem (appears at 35 blocks) is collected */
 const troll={awake:false,beaten:false,last:0};
 const trollC=makeClimber({step:3,uphill:1.4,dur:900,pause:2200,lift:.3,scale:2.3,msgMs:12000,
-  msg:'A troll has woken up! He smashes 10 blocks every minute. Grow your footprint to 350 blocks squared to find the gem that sends him away.',
-  when(area){
+  msg:'A troll has woken up! He smashes 10 blocks every minute. Build to 35 blocks high to find the gem that sends him away.',
+  when(area,top){
     if(troll.beaten)return false;
-    if(area>=300&&!troll.awake){troll.awake=true;troll.last=performance.now()}
+    if(top>=30&&!troll.awake){troll.awake=true;troll.last=performance.now()}
     return troll.awake;
   },
   build(box){
@@ -625,15 +624,21 @@ function trollTick(now){
 function checkClimbers(){
   let peak=-1;
   for(let i=world.length-1;i>=0;i--)if(world[i]&&!BLOCKS[world[i]].water){peak=i;break}
-  const area=footprintArea();
-  const NEXT=[[100,'the mountaineer'],[150,'the bear'],[200,'a goat'],[215,'another goat'],[230,'another goat'],[245,'another goat'],[250,'the eagle'],[260,'the ram'],[300,'the troll'],[350,'the gem']];
+  const area=blocksPlaced();
+  const NEXT=[[100,'the mountaineer'],[150,'the bear'],[200,'a goat'],[215,'another goat'],[230,'another goat'],[245,'another goat'],[260,'the ram']];
   const fs=$('footStat');
   if(fs){
     const upNext=NEXT.find(n=>area<n[0]);
-    fs.innerHTML='Footprint: <b>'+area+'</b> blocks\u00b2'+(upNext?' &middot; '+(upNext[0]-area)+' more for '+upNext[1]:' &middot; everything unlocked');
+    fs.innerHTML='Blocks laid: <b>'+area+'</b>'+(upNext?' &middot; '+(upNext[0]-area)+' more for '+upNext[1]:' &middot; everything unlocked');
   }
-  climbers.forEach(c=>c.check(peak,area));eagle.check(peak,area);
-  if(troll.awake&&!gem.visible&&area>=350){
+  const top=peak>=0?Math.floor(peak/(W*D)):-1;
+  climbers.forEach(c=>c.check(peak,area));
+  {
+    const top=peak>=0?Math.floor(peak/(W*D)):-1,nowOn=top>20;
+    eagles.forEach((e,i)=>e.check(peak,area,i===0&&!eagleFlockOn));
+    eagleFlockOn=nowOn;
+  }
+  if(troll.awake&&!gem.visible&&top>=35){
     const gy=Math.floor(peak/(W*D))+3.6;
     gem.userData.y=gy;gem.position.set(peak%W+.5-W/2,gy,Math.floor(peak/W)%D+.5-D/2);gem.visible=true;
     say('A gem has appeared above your summit! Tap it to send the troll away.',10000);
@@ -1106,7 +1111,7 @@ try{const s=localStorage.getItem('terrablocks-world');if(s)loaded=decode(JSON.pa
 if(loaded){rebuild()}else{setupDims(40);captureBaseline()}
 needsSetup=!loaded;
 
-(function loop(){updateCam();{const now=performance.now();climbers.forEach(c=>c.tick(now));eagle.tick(now);trollTick(now)}renderer.render(scene,camera);placeLabels();requestAnimationFrame(loop)})();
+(function loop(){updateCam();{const now=performance.now();climbers.forEach(c=>c.tick(now));eagles.forEach(e=>e.tick(now));trollTick(now)}renderer.render(scene,camera);placeLabels();requestAnimationFrame(loop)})();
 })();
 </script>
 </body>
