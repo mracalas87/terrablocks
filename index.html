@@ -1,1263 +1,1118 @@
 <!DOCTYPE html>
-<html lang="en">
+<!-- Year 5 Mountain Makers. Copyright (c) 2026 Mr Andy, King's College School Cascais. All rights reserved. Not to be copied or redistributed without permission. -->
+<html lang="en-GB">
 <head>
-<meta charset="UTF-8">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap" rel="stylesheet">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🍋 Mr Andy's Lemonade Stand</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="author" content="Mr Andy">
+<meta name="theme-color" content="#2b3a2e">
+<title>Year 5 Mountain Makers</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-:root {
-  --yellow: #F5C800; --yellow-dark: #D4A800;
-  --navy: #1A2E4A; --navy-mid: #1E3A5F;
-  --lime: #4CAF50; --lime-dark: #388E3C;
-  --red: #E53935; --white: #FFFFFF;
-  --cream: #FFFDE7; --grey: #546E7A;
-  --light-grey: #ECEFF1; --orange: #F57C00;
-  --sky: #87CEEB; --grass: #5D8A3C; --road: #C8B89A;
-}
-body { font-family: 'Nunito', 'Segoe UI', Arial, sans-serif; background: var(--navy); color: var(--navy); min-height: 100vh; display: flex; flex-direction: column; align-items: center; overflow-x: hidden; }
+  :root{
+    --slate:#2b3a2e;      /* survey-map green-black */
+    --paper:#f3f6ea;      /* map paper */
+    --contour:#8a6d3b;    /* contour-line brown */
+    --marker:#ffcf33;     /* highlighter yellow: the one loud colour */
+    --ink:#1c241e;
+    --sky:#bfe3f2;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;margin:0;overflow:hidden;background:var(--sky);
+    font-family:"Trebuchet MS","Gill Sans","Segoe UI",sans-serif;color:var(--ink);
+    -webkit-user-select:none;user-select:none;touch-action:none}
+  canvas#view{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
 
-/* HEADER */
-header { width:100%; background:var(--yellow); padding:12px 24px; display:flex; align-items:center; justify-content:space-between; box-shadow:0 3px 10px rgba(0,0,0,0.2); position:sticky; top:0; z-index:100; }
-header h1 { font-size:1.3rem; font-weight:800; color:var(--navy); }
-.header-stats { display:flex; gap:14px; }
-.stat-pill { background:var(--navy); color:var(--yellow); border-radius:20px; padding:5px 14px; font-size:0.85rem; font-weight:700; }
+  .panel{position:fixed;background:var(--paper);border:2px solid var(--slate);border-radius:10px;
+    box-shadow:3px 3px 0 var(--slate)}
+  button{font:inherit;color:inherit;background:transparent;border:0;cursor:pointer;padding:8px 12px;border-radius:7px;
+    min-height:40px;font-weight:700;font-size:15px}
+  button:focus-visible,input:focus-visible{outline:3px solid var(--contour);outline-offset:2px}
+  button:active{transform:translateY(1px)}
+  button[aria-pressed="true"]{background:var(--marker)}
 
-/* SCREENS */
-.screen { width:100%; max-width:960px; padding:20px 16px 40px; display:none; flex-direction:column; gap:16px; }
-.screen.active { display:flex; }
+  #top{top:calc(10px + env(safe-area-inset-top,0px));left:10px;right:10px;display:flex;align-items:center;gap:6px;padding:5px 8px;flex-wrap:wrap}
+  #top h1{font-size:19px;margin:0 8px 0 4px;letter-spacing:.5px}
+  #top .gap{flex:1}
+  .seg{display:flex;gap:2px;border:2px solid var(--slate);border-radius:9px;padding:2px}
+  .seg button{min-height:34px;padding:5px 12px}
 
-/* CARDS */
-.card { background:var(--white); border-radius:14px; padding:20px 22px; box-shadow:0 4px 16px rgba(0,0,0,0.12); }
-.card-title { font-size:.95rem; font-weight:800; color:var(--navy); text-transform:uppercase; letter-spacing:.5px; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+  #views{right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:2px;padding:5px}
+  #views button{padding:6px 10px;font-size:14px}
+  #views hr{width:100%;border:0;border-top:2px solid var(--slate);margin:3px 0}
 
-/* WEATHER STRIP */
-.weather-strip { background:var(--navy-mid); border-radius:14px; padding:16px 22px; display:flex; align-items:center; justify-content:space-between; color:var(--white); }
-.weather-info { display:flex; align-items:center; gap:14px; }
-.weather-emoji { font-size:2.6rem; line-height:1; }
-.weather-text h2 { font-size:1.1rem; font-weight:700; color:var(--yellow); }
-.weather-text p { font-size:.82rem; opacity:.8; margin-top:2px; }
-.demand-meter { text-align:right; }
-.demand-label { font-size:.72rem; opacity:.7; text-transform:uppercase; letter-spacing:.5px; }
-.demand-bar-wrap { width:130px; height:10px; background:rgba(255,255,255,.2); border-radius:5px; margin-top:5px; }
-.demand-bar { height:100%; border-radius:5px; background:var(--yellow); transition:width .4s; }
-.demand-value { font-size:.78rem; margin-top:4px; font-weight:600; color:var(--yellow); }
-.day-prog-wrap { margin-bottom:6px; }
-.day-prog-bg { width:130px; height:7px; background:rgba(255,255,255,.15); border-radius:4px; }
-.day-prog-fill { height:100%; border-radius:4px; background:var(--yellow); transition:width .3s; }
-.day-prog-lbl { font-size:.72rem; color:rgba(255,255,255,.6); margin-top:3px; }
+  #slice{left:10px;bottom:calc(118px + env(safe-area-inset-bottom,0px));padding:8px 12px;display:flex;align-items:center;gap:10px;font-weight:700;font-size:14px}
+  #slice input{width:150px;accent-color:var(--contour)}
+  #footStat{left:10px;bottom:calc(164px + env(safe-area-inset-bottom,0px));padding:6px 12px;font-size:13px;font-weight:700}
+  #footStat b{color:var(--contour)}
 
-/* TWO COL */
-.two-col { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  #palette{left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));padding:8px;display:flex;gap:8px;overflow-x:auto;touch-action:pan-x}
+  .blk{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 6px 4px;min-width:72px;border-radius:8px;font-size:12.5px;font-weight:700;line-height:1.15}
+  .blk img{width:44px;height:44px;image-rendering:pixelated;border:2px solid var(--slate);border-radius:4px;display:block}
+  .blk small{font-weight:400;font-size:10.5px;color:#55604f}
+  .blk[aria-pressed="true"]{background:var(--marker)}
 
-/* INPUTS */
-.input-group { margin-bottom:12px; }
-.input-group label { display:block; font-size:.78rem; font-weight:700; color:var(--grey); text-transform:uppercase; letter-spacing:.4px; margin-bottom:5px; }
-.input-row { display:flex; align-items:center; gap:8px; }
-.input-row input[type=number] { width:80px; padding:8px 10px; border:2px solid var(--light-grey); border-radius:8px; font-size:1rem; font-weight:700; color:var(--navy); outline:none; transition:border-color .2s; }
-.input-row input[type=number]:focus { border-color:var(--yellow); }
-.unit { font-size:.78rem; color:var(--grey); }
-.cost-hint { font-size:.73rem; color:var(--grey); margin-top:3px; }
+  .menu{top:calc(64px + env(safe-area-inset-top,0px));right:10px;padding:10px;display:none;flex-direction:column;gap:4px;max-width:260px}
+  .menu.open{display:flex}
+  .menu p{margin:0 4px 4px;font-size:13px}
+  .menu button{text-align:left;border:2px solid var(--slate)}
 
-/* SLIDERS */
-.slider-wrap { margin-bottom:14px; }
-.slider-label-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:5px; }
-.slider-label { font-size:.78rem; font-weight:700; color:var(--grey); text-transform:uppercase; letter-spacing:.4px; }
-.slider-val { font-size:.9rem; font-weight:800; color:var(--navy); }
-input[type=range] { width:100%; height:6px; border-radius:3px; outline:none; cursor:pointer; -webkit-appearance:none; background:var(--light-grey); }
-input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:20px; height:20px; border-radius:50%; background:var(--yellow); border:3px solid var(--navy); cursor:pointer; }
-
-/* PRICE */
-.price-big { display:flex; align-items:center; gap:6px; font-size:2rem; font-weight:900; color:var(--navy); }
-.price-big input { width:100px; font-size:2rem; font-weight:900; color:var(--navy); border:none; border-bottom:3px solid var(--yellow); outline:none; background:transparent; text-align:center; }
-.price-hint { font-size:.8rem; color:var(--grey); margin-top:6px; }
-
-/* COST SUMMARY */
-.cost-summary { background:var(--cream); border-radius:10px; padding:12px 16px; margin-top:8px; font-size:.88rem; color:var(--navy); }
-.cost-summary strong { font-size:1.05rem; }
-
-/* SELL BUTTON */
-.sell-btn { width:100%; padding:16px; background:var(--lime); color:white; border:none; border-radius:12px; font-size:1.15rem; font-weight:800; cursor:pointer; letter-spacing:.5px; transition:background .2s, transform .1s; box-shadow:0 4px 12px rgba(76,175,80,.4); }
-.sell-btn:hover { background:var(--lime-dark); }
-.sell-btn:active { transform:scale(.98); }
-
-/* LOG */
-.log-wrap { max-height:200px; overflow-y:auto; display:flex; flex-direction:column; gap:6px; }
-.log-entry { background:var(--cream); border-radius:8px; padding:8px 12px; font-size:.78rem; border-left:3px solid var(--yellow); }
-.log-entry .log-day { font-weight:700; color:var(--navy); }
-.log-entry .log-reason { color:var(--grey); margin-top:2px; font-style:italic; }
-.log-empty { color:var(--grey); font-size:.83rem; font-style:italic; }
-
-/* MINI CHART */
-.mini-chart { width:100%; height:80px; }
-.mini-chart canvas { width:100%; height:100%; }
-
-/* ═══════════════════════════════════════
-   SIMULATION SCREEN
-═══════════════════════════════════════ */
-#sim-screen { background:transparent; padding:0; max-width:100%; }
-#sim-screen.active { display:flex; }
-
-.sim-wrap { width:100%; max-width:960px; margin:0 auto; padding:16px; display:flex; flex-direction:column; gap:14px; }
-
-/* Scene canvas */
-.scene-container { position:relative; width:100%; border-radius:16px; overflow:hidden; box-shadow:0 8px 30px rgba(0,0,0,0.4); }
-#scene-canvas { width:100%; display:block; }
-
-/* Sim HUD */
-.sim-hud { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
-.hud-card { background:var(--white); border-radius:12px; padding:14px 16px; text-align:center; box-shadow:0 3px 10px rgba(0,0,0,.12); }
-.hud-card .hud-val { font-size:1.6rem; font-weight:900; color:var(--navy); }
-.hud-card .hud-lbl { font-size:.72rem; color:var(--grey); text-transform:uppercase; letter-spacing:.4px; margin-top:2px; }
-
-/* Stock bars */
-.stock-bars { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
-.stock-item { background:var(--white); border-radius:12px; padding:12px 14px; box-shadow:0 3px 10px rgba(0,0,0,.12); }
-.stock-item .s-label { font-size:.72rem; font-weight:700; color:var(--grey); text-transform:uppercase; margin-bottom:6px; display:flex; justify-content:space-between; }
-.stock-item .s-val { font-weight:800; color:var(--navy); font-size:.85rem; }
-.stock-bar-bg { height:8px; background:var(--light-grey); border-radius:4px; overflow:hidden; }
-.stock-bar-fill { height:100%; border-radius:4px; transition:width .15s; }
-
-/* Sim ticker */
-.sim-ticker { background:var(--navy-mid); border-radius:12px; padding:14px 18px; color:var(--white); font-size:.88rem; min-height:52px; display:flex; align-items:center; gap:10px; }
-.ticker-icon { font-size:1.4rem; }
-.ticker-text { flex:1; }
-
-/* Results overlay */
-.sim-result { background:var(--white); border-radius:14px; padding:22px; box-shadow:0 4px 16px rgba(0,0,0,.12); }
-.sim-result.show { display:block; }
-.result-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin:14px 0; }
-.result-stat { text-align:center; }
-.result-stat .val { font-size:1.5rem; font-weight:900; }
-.result-stat .lbl { font-size:.73rem; color:var(--grey); text-transform:uppercase; }
-.ct-box { background:var(--navy-mid); border-radius:10px; padding:14px 16px; margin-top:12px; }
-.ct-box label { display:block; font-size:.8rem; color:var(--yellow); font-weight:700; margin-bottom:6px; }
-.ct-box textarea { width:100%; background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.2); border-radius:8px; color:white; padding:8px 10px; font-size:.85rem; resize:none; outline:none; font-family:inherit; }
-.ct-box textarea:focus { border-color:var(--yellow); }
-.next-btn { margin-top:10px; width:100%; padding:12px; background:var(--yellow); color:var(--navy); border:none; border-radius:10px; font-size:1rem; font-weight:800; cursor:pointer; transition:background .2s; }
-.next-btn:hover { background:var(--yellow-dark); }
-
-/* GAME OVER */
-#over-screen.active { display:flex; }
-.replay-btn { padding:14px 36px; background:var(--yellow); color:var(--navy); border:none; border-radius:12px; font-size:1.1rem; font-weight:800; cursor:pointer; transition:background .2s; margin-top:20px; }
-.replay-btn:hover { background:var(--yellow-dark); }
-.final-log-entry { background:#F5F5F5; border-radius:8px; padding:8px 12px; margin-bottom:6px; font-size:.78rem; border-left:3px solid var(--yellow); }
-
-@media(max-width:600px) {
-  .two-col { grid-template-columns:1fr; }
-  .sim-hud { grid-template-columns:repeat(2,1fr); }
-  .stock-bars { grid-template-columns:repeat(2,1fr); }
-}
+  #hint{position:fixed;left:50%;transform:translateX(-50%);top:calc(70px + env(safe-area-inset-top,0px));
+    background:var(--slate);color:var(--paper);padding:7px 14px;border-radius:20px;font-size:13.5px;pointer-events:none;
+    transition:opacity .6s;max-width:92vw;text-align:center}
+  #hint.gone{opacity:0}
+  #setup{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;background:rgba(28,36,30,.6);padding:16px}
+  #setup.open{display:flex}
+  .setupCard{background:var(--paper);border:3px solid var(--slate);border-radius:14px;box-shadow:5px 5px 0 var(--slate);
+    width:min(440px,100%);padding:22px 24px;display:none}
+  .setupCard.show{display:block}
+  .setupCard h2{margin:0 0 4px;font-size:22px}
+  .setupCard p{margin:0 0 16px;font-size:15px;color:#55604f}
+  .setupGrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:10px}
+  .setupGrid button{border:2px solid var(--slate);background:#fff;padding:12px 10px;text-align:left;border-radius:9px}
+  .setupGrid button b{display:block;font-size:15px}
+  .setupGrid button small{font-weight:400;color:#55604f;font-size:12.5px}
+  #setupExample{width:100%;border:2px solid var(--contour);background:var(--marker);border-radius:9px;padding:12px;margin-top:4px;font-size:15px}
+  #setupBack{border:2px solid var(--slate);background:transparent}
+  #mapOverlay{position:fixed;inset:0;z-index:55;display:none;align-items:center;justify-content:center;background:rgba(28,36,30,.78);padding:14px}
+  #mapOverlay.open{display:flex}
+  #mapCard{background:var(--paper);border:3px solid var(--slate);border-radius:14px;box-shadow:5px 5px 0 var(--slate);
+    max-width:96vw;max-height:94vh;padding:14px;display:flex;flex-direction:column;align-items:center;gap:8px;overflow:auto}
+  #mapCard h2{margin:0;font-size:18px}
+  #mapCanvas{border:2px solid var(--slate);border-radius:6px;display:block;touch-action:none}
+  #mapLegend{display:flex;gap:14px;flex-wrap:wrap;justify-content:center;font-size:12px;font-weight:700}
+  #mapLegend span{display:flex;align-items:center;gap:5px}
+  #mapLegend i{width:13px;height:13px;border-radius:3px;display:inline-block;border:1px solid rgba(43,58,46,.4)}
+  #mapClose{align-self:flex-end;border:2px solid var(--slate)}
+  button,label{-webkit-touch-callout:none}
+  #tip{position:fixed;display:none;z-index:50;pointer-events:none;background:var(--slate);color:var(--paper);
+    padding:9px 13px;border-radius:9px;font-size:14px;line-height:1.35;max-width:250px;box-shadow:3px 3px 0 rgba(0,0,0,.25)}
+  #tip b{color:var(--marker);display:block;margin-bottom:2px}
+  #credit{position:fixed;z-index:1;right:22px;top:calc(76px + env(safe-area-inset-top,0px));font-size:14px;font-weight:700;font-style:italic;
+    color:#000;opacity:.8;pointer-events:none;letter-spacing:.4px;animation:drift 7s ease-in-out infinite}
+  #credit{text-align:right;max-width:min(350px,70vw);display:flex;align-items:center;gap:9px}
+  #avatar{width:42px;height:42px;border-radius:50%;object-fit:cover;flex:0 0 auto;opacity:.85;border:2px solid rgba(43,58,46,.5)}
+  #credit span{display:block;font-size:12px;font-weight:400;margin-top:2px;line-height:1.3}
+  @keyframes drift{0%,100%{transform:translateY(0)}50%{transform:translateY(7px)}}
+  @media (prefers-reduced-motion:reduce){#credit{animation:none}}
+  .panel{z-index:2}
+  #hint{z-index:3}
+  #intro{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;background:rgba(28,36,30,.6);padding:16px}
+  #intro.open{display:flex}
+  #introCard{background:var(--paper);border:3px solid var(--slate);border-radius:14px;box-shadow:5px 5px 0 var(--slate);
+    width:min(480px,100%);padding:22px 24px 18px}
+  #introCard .num{display:inline-block;background:var(--slate);color:var(--paper);font-weight:700;font-size:13px;padding:3px 10px;border-radius:20px}
+  #introCard h2{margin:12px 0 8px;font-size:25px;line-height:1.15}
+  #introCard p{margin:0 0 12px;font-size:16.5px;line-height:1.45}
+  #introWords{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+  #introWords span{border:2px solid var(--contour);border-radius:6px;padding:2px 9px;font-weight:700;font-size:14px;background:#fff}
+  #introNav{display:flex;gap:8px;align-items:center;margin-top:6px}
+  #introNav .gap{flex:1}
+  #introNav button{border:2px solid var(--slate)}
+  #introNext{background:var(--marker)}
+  #introSkip{border-color:transparent!important;font-weight:400;text-decoration:underline}
+  #labels{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+  .lab{position:absolute;transform:translate(-50%,-100%);margin-top:-22px;pointer-events:auto;cursor:pointer;
+    background:var(--paper);border:2px solid var(--slate);border-radius:6px;padding:3px 8px;font-size:13px;font-weight:700;white-space:nowrap}
+  .lab::after{content:"";position:absolute;left:50%;top:100%;margin:2px 0 0 -1px;width:2px;height:22px;background:var(--slate)}
+  #labelEdit{left:50%;right:auto;top:28%;transform:translateX(-50%);width:min(320px,90vw);max-width:none}
+  #labelEdit input{font:inherit;font-size:16px;padding:9px;border:2px solid var(--slate);border-radius:7px;background:#fff;
+    -webkit-user-select:text;user-select:text;width:100%}
+  @media (max-width:700px){#top h1{display:none}#slice input{width:100px}}
+  @media (prefers-reduced-motion:reduce){#hint{transition:none}}
 </style>
 </head>
 <body>
+<canvas id="view"></canvas>
+<div id="labels"></div>
 
-<header>
-  <h1>🍋 Mr Andy's Lemonade Stand</h1>
-  <div class="header-stats">
-    <div class="stat-pill">Day <span id="h-day">1</span>/30</div>
-    <div class="stat-pill">💰 €<span id="h-balance">10.00</span></div>
+<div id="top" class="panel">
+  <h1>Year 5 Mountain Makers</h1>
+  <div class="seg" role="group" aria-label="Tool">
+    <button id="tBuild" data-tip="Build|Tap a surface to add the block you have chosen from the bar at the bottom." aria-pressed="true">Build</button>
+    <button id="tDig" data-tip="Dig|Tap a block to remove it." aria-pressed="false">Dig</button>
+    <button id="tPaint" data-tip="Swap|Tap a block to change it into the block you have chosen." aria-pressed="false">Swap</button>
+    <button id="tLabel" data-tip="Label|Tap a block to pin a name tag to it. Tap a tag to change or delete it." aria-pressed="false">Label</button>
   </div>
-</header>
-
-<!-- ════════════════════════════════════
-     SCREEN 1: PLANNING
-════════════════════════════════════ -->
-<!-- ══ TITLE SCREEN ══ -->
-<div class="screen active" id="title-screen">
-  <div style="max-width:420px;width:100%;text-align:center;padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:16px;">
-    <img src="data:image/png;base64,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"
-         style="width:130px;height:130px;border-radius:50%;object-fit:cover;border:4px solid var(--yellow);box-shadow:0 8px 28px rgba(0,0,0,.4);">
-    <div>
-      <div style="font-size:2.8rem;line-height:1;margin-bottom:6px;">🍋</div>
-      <h1 style="font-size:2.2rem;font-weight:900;color:var(--yellow);line-height:1.1;margin:0;">Mr Andy's<br>Lemonade Stand</h1>
-    </div>
-    <button class="sell-btn" style="background:var(--yellow);color:var(--navy);margin-top:8px;font-size:1.1rem;" onclick="startInstructions()">▶ Start Game</button>
-  </div>
+  <button id="undo" data-tip="Undo|Takes back your last change. Tap again to go back further.">Undo</button>
+  <span class="gap"></span>
+  <button id="helpBtn" data-tip="Help|Shows the instructions for this task again.">Help</button>
+  <button id="mapBtn" data-tip="Map|Shows a live map of your model from above, coloured by height, with contour lines like a real topographic map.">Map</button>
+  <button id="sizeBtn" data-tip="Size|Makes the land bigger or smaller. Your model stays in the middle.">Size</button>
+  <button id="newBtn" data-tip="New|Starts a new model from flat land, rock layers, land and sea, or nothing.">New</button>
+  <button id="photo" data-tip="Take photo|Saves a picture of this view, with your labels, to show your work.">Take photo</button>
+  <button id="saveFile" data-tip="Save file|Saves your model as a file so you can keep it or hand it in.">Save file</button>
+  <button id="openFile" data-tip="Open file|Opens a model you saved before.">Open file</button>
+  <input type="file" id="fileIn" accept=".json,application/json" hidden>
 </div>
 
-<!-- ══ INSTRUCTION CARDS ══ -->
-<div class="screen" id="instr-screen">
-  <div style="max-width:520px;width:100%;padding:0 16px;">
-    <!-- progress dots -->
-    <div id="instr-dots" style="display:flex;gap:6px;justify-content:center;margin-bottom:16px;"></div>
-    <!-- card -->
-    <div id="instr-card" style="background:white;border-radius:16px;padding:28px 24px;box-shadow:0 4px 20px rgba(0,0,0,.18);min-height:240px;display:flex;flex-direction:column;justify-content:space-between;">
-      <div>
-        <div id="instr-icon" style="font-size:2.5rem;margin-bottom:12px;">📦</div>
-        <div id="instr-title" style="font-size:1.2rem;font-weight:900;color:var(--navy);margin-bottom:8px;"></div>
-        <div id="instr-body" style="font-size:.88rem;color:var(--grey);line-height:1.6;"></div>
-      </div>
-      <div id="instr-tip" style="background:var(--cream);border-radius:8px;padding:10px 12px;font-size:.8rem;color:var(--navy);margin-top:16px;"></div>
-    </div>
-    <!-- nav -->
-    <div style="display:flex;gap:10px;margin-top:14px;align-items:center;justify-content:space-between;">
-      <button id="instr-back" class="sell-btn" style="background:rgba(255,255,255,.15);color:white;flex:1;padding:12px;" onclick="instrNav(-1)">← Back</button>
-      <button id="instr-skip" class="sell-btn" style="background:transparent;color:rgba(255,255,255,.5);border:1px solid rgba(255,255,255,.2);flex:1;padding:12px;font-size:.85rem;" onclick="skipInstructions()">Skip</button>
-      <button id="instr-next" class="sell-btn" style="flex:1;padding:12px;" onclick="instrNav(1)">Next →</button>
-    </div>
-  </div>
+<div id="newMenu" class="panel menu">
+  <p>Start a new model. You can undo this.</p>
+  <button data-start="example">Example mountain range</button>
+  <button data-start="flat">Flat land</button>
+  <button data-start="layers">Rock layers</button>
+  <button data-start="sea">Land and sea</button>
+  <button data-start="empty">Empty</button>
 </div>
 
-<div class="screen" id="plan-screen">
+<div id="sizeMenu" class="panel menu">
+  <p>Change the land size. Your model stays in the middle. Making it smaller trims the edges.</p>
+  <button data-size="40">Small (40 by 40)</button>
+  <button data-size="56">Medium (56 by 56)</button>
+  <button data-size="72">Large (72 by 72)</button>
+  <button data-size="96">Extra large (96 by 96)</button>
+</div>
 
-  <!-- Yesterday result banner - hidden on day 1 -->
-  <div id="yesterday-banner" style="display:none;background:linear-gradient(135deg,#1e3a5f,#2a4f7c);border-radius:14px;padding:14px 18px;margin-bottom:8px;display:none;align-items:center;justify-content:space-between;gap:12px;border:1px solid rgba(245,200,0,.25);">
-    <div>
-      <div style="font-size:.68rem;text-transform:uppercase;letter-spacing:.8px;color:rgba(255,255,255,.5);margin-bottom:3px;">Yesterday</div>
-      <div id="yesterday-text" style="font-size:.95rem;font-weight:800;color:#fff;line-height:1.4;"></div>
-    </div>
-    <div style="text-align:right;flex-shrink:0;">
-      <div style="font-size:.68rem;text-transform:uppercase;letter-spacing:.8px;color:rgba(255,255,255,.5);margin-bottom:3px;">New balance</div>
-      <div id="yesterday-balance" style="font-size:1.3rem;font-weight:900;color:var(--yellow);">€0.00</div>
-    </div>
-  </div>
+<div id="labelEdit" class="panel menu">
+  <p>What is this part of your model?</p>
+  <input id="labelText" type="text" maxlength="40" placeholder="For example: fold mountain" aria-label="Label text">
+  <button id="labelSave">Save label</button>
+  <button id="labelDelete">Delete label</button>
+  <button id="labelCancel">Cancel</button>
+</div>
 
-  <div class="weather-strip">
-    <div class="weather-info">
-      <div class="weather-emoji" id="weather-emoji">☀️</div>
-      <div class="weather-text">
-        <h2 id="weather-label">Sunny</h2>
-        <p id="weather-desc">Great day for lemonade!</p>
-      </div>
-    </div>
-    <div>
-      <div class="day-prog-wrap">
-        <div class="day-prog-bg"><div class="day-prog-fill" id="day-bar" style="width:3.3%"></div></div>
-        <div class="day-prog-lbl">Day <span id="day-label-n">1</span> of 30</div>
-      </div>
-      <div class="demand-meter" style="margin-top:8px">
-        <div class="demand-label">Est. Demand</div>
-        <div class="demand-bar-wrap"><div class="demand-bar" id="demand-bar" style="width:70%"></div></div>
-        <div class="demand-value" id="demand-value">High</div>
-      </div>
-    </div>
-  </div>
+<div id="views" class="panel" role="group" aria-label="Camera">
+  <button data-view="3d" data-tip="3D view|Looks at your model from a corner.">3D</button>
+  <button data-view="top" data-tip="Top view|Looks straight down, like a map.">Top</button>
+  <button data-view="front" data-tip="Front view|Looks from the front. Use with Slice to see the layers.">Front</button>
+  <button data-view="side" data-tip="Side view|Looks from the side.">Side</button>
+  <hr>
+  <button id="zin" data-tip="Zoom in|Moves closer. You can also pinch with two fingers." aria-label="Zoom in">+</button>
+  <button id="zout" data-tip="Zoom out|Moves further away to see the whole model." aria-label="Zoom out">&minus;</button>
+</div>
 
-  <div class="two-col">
-    <div class="card">
-      <div class="card-title">📦 Buy Stock</div>
-      <div class="input-group">
-        <label>Cups to buy</label>
-        <div class="input-row"><input type="number" id="cups" value="20" min="0" max="100"><span class="unit">cups @ €0.02</span></div>
-      </div>
-      <div class="input-group">
-        <label>Lemons to buy</label>
-        <div class="input-row"><input type="number" id="lemons" value="20" min="0" max="100"><span class="unit">lemons @ €0.05</span></div>
-      </div>
-      <div class="input-group">
-        <label>Sugar (spoons)</label>
-        <div class="input-row"><input type="number" id="sugar" value="20" min="0" max="100"><span class="unit">spoons @ €0.03</span></div>
-      </div>
-      <div class="input-group">
-        <label>Ice cubes</label>
-        <div class="input-row"><input type="number" id="ice" value="30" min="0" max="100"><span class="unit">cubes @ €0.01</span></div>
-      </div>
-      <div class="cost-summary">
-        Stock cost: <strong>€<span id="stock-cost">1.70</span></strong>
-        &nbsp;·&nbsp; Remaining: <strong>€<span id="balance-after">8.30</span></strong>
-      </div>
-      <div id="recipe-warning" style="display:none;background:#FFF3E0;border-left:3px solid #E65100;border-radius:8px;padding:10px 12px;margin-top:8px;font-size:.8rem;color:#BF360C;"></div>
-    </div>
+<div id="footStat" class="panel" data-tip="Blocks laid|How many blocks you have added since you started this model. This is what unlocks each hidden character."></div>
+<label id="slice" data-tip="Slice|Slide to cut through your model and see the layers inside, like a cross-section." class="panel">Slice
+  <input type="range" id="cut" min="0" max="23" value="23" aria-label="Slice through the model">
+</label>
 
-    <div class="card">
-      <div class="card-title">🧪 Recipe &amp; Price</div>
-      <div class="slider-wrap">
-        <div class="slider-label-row"><span class="slider-label">Lemons per cup</span><span class="slider-val" id="lpc-val">2</span></div>
-        <input type="range" id="lpc" min="1" max="5" value="2">
-      </div>
-      <div class="slider-wrap">
-        <div class="slider-label-row"><span class="slider-label">Sugar per cup</span><span class="slider-val" id="spc-val">2</span></div>
-        <input type="range" id="spc" min="1" max="5" value="2">
-      </div>
-      <div class="slider-wrap">
-        <div class="slider-label-row"><span class="slider-label">Ice per cup</span><span class="slider-val" id="ipc-val">2</span></div>
-        <input type="range" id="ipc" min="1" max="5" value="2">
-      </div>
-      <div style="margin-top:16px">
-        <div class="card-title" style="margin-bottom:8px">💲 Price per Cup</div>
-        <div class="price-big">€<input type="number" id="price" value="0.50" min="0.05" max="5.00" step="0.05"></div>
-        <div class="price-hint" id="price-hint">Sounds reasonable for today.</div>
-      </div>
-    </div>
-  </div>
-
-  <button class="sell-btn" onclick="startSim()">🍋 Open the Stand - Start Selling!</button>
-
-  <div class="two-col">
-    <div class="card">
-      <div class="card-title">📋 Decision Log</div>
-      <div class="log-wrap" id="log-wrap"><div class="log-empty">Your decisions will appear here.</div></div>
-    </div>
-    <div class="card">
-      <div class="card-title">📈 Balance History</div>
-      <div class="mini-chart"><canvas id="chart-canvas"></canvas></div>
-      <div style="font-size:.75rem;color:var(--grey);margin-top:6px">Balance: <strong>€<span id="chart-balance">10.00</span></strong></div>
+<div id="palette" class="panel" role="group" aria-label="Blocks"></div>
+<div id="credit"><div>Created by Mr Andy<span>&lsquo;You are not within the mountains, the mountains are within you&rsquo;</span></div><img id="avatar" alt="" src="data:image/jpeg;base64,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"></div>
+<div id="tip" role="tooltip"></div>
+<div id="mapOverlay" role="dialog" aria-modal="true" aria-labelledby="mapTitle">
+  <div id="mapCard">
+    <button id="mapClose">Close</button>
+    <h2 id="mapTitle">Topography map</h2>
+    <canvas id="mapCanvas"></canvas>
+    <div id="mapLegend">
+      <span><i style="background:#2f6fae"></i>Water</span>
+      <span><i style="background:#3d7a3a"></i>Low ground</span>
+      <span><i style="background:#b0a354"></i>Mid slopes</span>
+      <span><i style="background:#786e6c"></i>High rock</span>
+      <span><i style="background:#fafafc"></i>Peak</span>
+      <span><i style="background:#2b3a2e"></i>Contour line, every 4 blocks of height</span>
+      <span><i style="background:#ffcf33"></i>Your labels</span>
     </div>
   </div>
 </div>
 
-<!-- ════════════════════════════════════
-     SCREEN 2: SIMULATION
-════════════════════════════════════ -->
-<div class="screen" id="sim-screen">
-  <div class="sim-wrap">
-
-    <div class="scene-container">
-      <canvas id="scene-canvas" width="960" height="340"></canvas>
+<div id="setup" role="dialog" aria-modal="true" aria-labelledby="setupTitle1">
+  <div id="setupCard1" class="setupCard show">
+    <h2 id="setupTitle1">Choose your land size</h2>
+    <p>How much space do you want to build on?</p>
+    <div class="setupGrid">
+      <button data-size="40"><b>Small</b><small>40 by 40</small></button>
+      <button data-size="56"><b>Medium</b><small>56 by 56</small></button>
+      <button data-size="72"><b>Large</b><small>72 by 72</small></button>
+      <button data-size="96"><b>Extra large</b><small>96 by 96</small></button>
     </div>
-
-    <!-- SIM DASHBOARD -->
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:8px 8px 0;">
-      <div class="hud-card" style="background:#1e3a5f;border-radius:10px;padding:8px 10px;text-align:center;">
-        <div class="hud-val" id="hud-sold" style="font-size:1.5rem;font-weight:900;color:#fff;">0</div>
-        <div class="hud-lbl" style="font-size:.62rem;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.5px;">Sold</div>
-      </div>
-      <div class="hud-card" style="background:#1e3a5f;border-radius:10px;padding:8px 10px;text-align:center;">
-        <div class="hud-val" id="hud-revenue" style="font-size:1.5rem;font-weight:900;color:#F5C800;">€0</div>
-        <div class="hud-lbl" style="font-size:.62rem;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.5px;">Revenue</div>
-      </div>
-      <div class="hud-card" style="background:#1e3a5f;border-radius:10px;padding:8px 10px;text-align:center;">
-        <div class="hud-val" id="hud-profit" style="font-size:1.5rem;font-weight:900;color:#EF5350;">-€0</div>
-        <div class="hud-lbl" style="font-size:.62rem;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.5px;">Profit</div>
-      </div>
-      <div class="hud-card" style="background:#1e3a5f;border-radius:10px;padding:8px 10px;text-align:center;">
-        <div class="hud-val" id="hud-time" style="font-size:.9rem;font-weight:900;color:#fff;">Morning</div>
-        <div class="hud-lbl" style="font-size:.62rem;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.5px;">Time</div>
-      </div>
+    <button id="setupExample">Play the example mountain range instead</button>
+  </div>
+  <div id="setupCard2" class="setupCard">
+    <h2>Choose your starting land</h2>
+    <p>You can change this later with the New button.</p>
+    <div class="setupGrid">
+      <button data-start2="flat"><b>Flat land</b><small>Grass and soil</small></button>
+      <button data-start2="layers"><b>Rock layers</b><small>Build your mountain up</small></button>
+      <button data-start2="sea"><b>Land and sea</b><small>Coast with an island</small></button>
+      <button data-start2="empty"><b>Empty</b><small>Start from nothing</small></button>
     </div>
-
-    <!-- Stock + Satisfaction row -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:6px 8px 0;">
-      <!-- Stock bars -->
-      <div style="background:#1e3a5f;border-radius:10px;padding:8px 10px;">
-        <div style="font-size:.65rem;font-weight:800;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;">Stock</div>
-        <div class="stock-item" style="margin-bottom:4px;">
-          <div class="s-label" style="font-size:.7rem;color:#fff;display:flex;justify-content:space-between;">🥤 Cups<span class="s-val" id="sb-cups">0</span></div>
-          <div class="stock-bar-bg" style="height:6px;border-radius:3px;background:rgba(255,255,255,.15);overflow:hidden;margin-top:2px;">
-            <div class="stock-bar-fill" id="sf-cups" style="width:100%;height:100%;background:#2196F3;transition:width .2s;"></div>
-          </div>
-        </div>
-        <div class="stock-item" style="margin-bottom:4px;">
-          <div class="s-label" style="font-size:.7rem;color:#fff;display:flex;justify-content:space-between;">🍋 Lemons<span class="s-val" id="sb-lemons">0</span></div>
-          <div class="stock-bar-bg" style="height:6px;border-radius:3px;background:rgba(255,255,255,.15);overflow:hidden;margin-top:2px;">
-            <div class="stock-bar-fill" id="sf-lemons" style="width:100%;height:100%;background:#F5C800;transition:width .2s;"></div>
-          </div>
-        </div>
-        <div class="stock-item" style="margin-bottom:4px;">
-          <div class="s-label" style="font-size:.7rem;color:#fff;display:flex;justify-content:space-between;">🍬 Sugar<span class="s-val" id="sb-sugar">0</span></div>
-          <div class="stock-bar-bg" style="height:6px;border-radius:3px;background:rgba(255,255,255,.15);overflow:hidden;margin-top:2px;">
-            <div class="stock-bar-fill" id="sf-sugar" style="width:100%;height:100%;background:#FF80AB;transition:width .2s;"></div>
-          </div>
-        </div>
-        <div class="stock-item">
-          <div class="s-label" style="font-size:.7rem;color:#fff;display:flex;justify-content:space-between;">🧊 Ice<span class="s-val" id="sb-ice">0</span></div>
-          <div class="stock-bar-bg" style="height:6px;border-radius:3px;background:rgba(255,255,255,.15);overflow:hidden;margin-top:2px;">
-            <div class="stock-bar-fill" id="sf-ice" style="width:100%;height:100%;background:#80DEEA;transition:width .2s;"></div>
-          </div>
-        </div>
-      </div>
-      <!-- Satisfaction + Profit mini chart -->
-      <div style="background:#1e3a5f;border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:6px;">
-        <div>
-          <div style="font-size:.65rem;font-weight:800;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Satisfaction</div>
-          <div style="display:flex;align-items:center;gap:6px;">
-            <div style="flex:1;height:8px;border-radius:4px;background:rgba(255,255,255,.15);overflow:hidden;">
-              <div id="sat-bar" style="height:100%;width:100%;background:#4CAF50;transition:width .2s;border-radius:4px;"></div>
-            </div>
-            <span id="sat-pct" style="font-size:.75rem;font-weight:800;color:#fff;min-width:30px;">100%</span>
-          </div>
-          <div style="font-size:.6rem;color:rgba(255,255,255,.4);margin-top:3px;">
-            💸<span id="sat-price">0</span> 🤢<span id="sat-taste">0</span> 😞<span id="sat-so">0</span>
-          </div>
-        </div>
-        <div style="flex:1;">
-          <div style="font-size:.65rem;font-weight:800;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;">Profit Tracker</div>
-          <canvas id="profit-chart" style="width:100%;display:block;" height="50"></canvas>
-        </div>
-      </div>
-    </div>
-
-    <div class="sim-ticker" style="margin:6px 8px 0;">
-      <div class="ticker-icon" id="ticker-icon">⏳</div>
-      <div class="ticker-text" id="ticker-text">Setting up the stand...</div>
-    </div>
-
+    <button id="setupBack">Back</button>
   </div>
 </div>
 
-<!-- Result overlay - lives outside all screens so position:fixed works cleanly -->
-<div id="sim-result" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(26,46,74,.92);align-items:center;justify-content:center;padding:20px;">
-  <div style="background:white;border-radius:20px;padding:32px 28px;max-width:400px;width:100%;box-shadow:0 12px 48px rgba(0,0,0,.35);text-align:center;">
-    <div style="font-size:1.2rem;font-weight:900;color:var(--navy);margin-bottom:16px;" id="result-title-txt"></div>
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;">
-      <div style="background:#f5f7fa;border-radius:10px;padding:12px 8px;">
-        <div id="r-sold" style="font-size:1.6rem;font-weight:900;color:var(--navy);">0</div>
-        <div style="font-size:.68rem;color:#888;text-transform:uppercase;margin-top:2px;">Cups Sold</div>
-      </div>
-      <div style="background:#f5f7fa;border-radius:10px;padding:12px 8px;">
-        <div id="r-revenue" style="font-size:1.6rem;font-weight:900;color:var(--navy);">€0</div>
-        <div style="font-size:.68rem;color:#888;text-transform:uppercase;margin-top:2px;">Revenue</div>
-      </div>
-      <div style="background:#f5f7fa;border-radius:10px;padding:12px 8px;">
-        <div id="r-profit" style="font-size:1.6rem;font-weight:900;color:var(--lime);">+€0</div>
-        <div style="font-size:.68rem;color:#888;text-transform:uppercase;margin-top:2px;">Profit</div>
-      </div>
+<div id="intro" role="dialog" aria-modal="true" aria-labelledby="introTitle">
+  <div id="introCard">
+    <span class="num" id="introNum"></span>
+    <h2 id="introTitle"></h2>
+    <p id="introText"></p>
+    <div id="introWords"></div>
+    <div id="introNav">
+      <button id="introBack">Back</button>
+      <button id="introSkip">Skip</button>
+      <span class="gap"></span>
+      <button id="introNext">Next</button>
     </div>
-    <div id="result-msg" style="font-size:.82rem;color:var(--grey);margin-bottom:18px;line-height:1.5;"></div>
-    <button onclick="nextDay()" style="width:100%;padding:18px;background:var(--yellow);color:var(--navy);border:none;border-radius:12px;font-size:1.15rem;font-weight:900;cursor:pointer;">
-      Next Day → Day <span id="next-day-num">2</span>
-    </button>
   </div>
 </div>
-
-<!-- ════════════════════════════════════
-     SCREEN 3: GAME OVER
-════════════════════════════════════ -->
-<div class="screen" id="over-screen">
-  <div style="background:white;border-radius:18px;padding:36px 32px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.2)">
-    <div style="font-size:3rem">🏆</div>
-    <h2 style="font-size:2rem;font-weight:900;color:var(--navy);margin-top:8px">30 Days Complete!</h2>
-    <div style="font-size:.9rem;color:var(--grey);margin-top:4px">Your final score:</div>
-    <div style="font-size:3.5rem;font-weight:900;color:var(--lime);margin:10px 0" id="final-score">€0.00</div>
-    <div style="text-align:left;margin-top:20px">
-      <div style="font-weight:800;color:var(--navy);margin-bottom:10px;font-size:1rem">🧠 Your Decision Log</div>
-      <div style="max-height:340px;overflow-y:auto" id="final-log"></div>
-    </div>
-    <button class="replay-btn" onclick="restartGame()">▶ Play Again</button>
-  </div>
-</div>
+<div id="hint">Tap to place a block. Drag to turn. Pinch or scroll to zoom.</div>
 
 <script>
-// ══════════════════════════════════════
-// CONSTANTS & STATE
-// ══════════════════════════════════════
-const WEATHERS = [
-  { label:"Scorching Hot", emoji:"🔥", desc:"Customers desperate for cold drinks!", demand:1.0 },
-  { label:"Sunny",         emoji:"☀️", desc:"Great day - people are out and about.", demand:0.80 },
-  { label:"Partly Cloudy", emoji:"⛅", desc:"Decent day, moderate traffic.", demand:0.55 },
-  { label:"Cloudy",        emoji:"☁️", desc:"Not many want cold drinks today.", demand:0.35 },
-  { label:"Rainy",         emoji:"🌧️", desc:"Hard sell - most people staying in.", demand:0.15 },
+(function(){
+'use strict';
+let W=40,D=40;const H=50,SIZES=[16,24,32,40,56,72,96];
+const BLOCKS=[null,
+ {name:'Grass',group:'Surface',c:'#5a9e3a',v:.25,kind:'grass'},
+ {name:'Topsoil',group:'Soil',c:'#6b4a2b',v:.25},
+ {name:'Clay',group:'Soil',c:'#b07a4f',v:.15},
+ {name:'Sand',group:'Soil',c:'#e3d08a',v:.12},
+ {name:'Sandstone',group:'Sedimentary',c:'#cfa46a',v:.1,bands:true},
+ {name:'Limestone',group:'Sedimentary',c:'#d9d6c3',v:.1,bands:true},
+ {name:'Slate',group:'Metamorphic',c:'#4d5663',v:.12,bands:true},
+ {name:'Marble',group:'Metamorphic',c:'#eeeeee',v:.06,speck:['#b9bcc4','#d5d7dc'],sp:.14},
+ {name:'Granite',group:'Igneous',c:'#b98f86',v:.1,speck:['#3a3a3a','#f1e9e4','#8d6a63'],sp:.4},
+ {name:'Basalt',group:'Igneous',c:'#33363b',v:.18},
+ {name:'Magma',group:'Igneous',c:'#f0641e',v:.2,speck:['#ffd23a','#a51e0a'],sp:.3,glow:true},
+ {name:'Water',group:'Surface',c:'#2f8fd6',v:.08,water:true},
+ {name:'Snow',group:'Surface',c:'#fbfdff',v:.04},
+ {name:'Wood',group:'Plants',c:'#6e4f2e',v:.2,bands:true},
+ {name:'Leaves',group:'Plants',c:'#3f8f3a',v:.35,speck:['#2c6e2a','#5fae4a'],sp:.25},
+ {name:'Pine needles',group:'Plants',c:'#24573a',v:.3,speck:['#183f29'],sp:.2}
 ];
-const W_WEIGHTS = [0.12,0.35,0.28,0.18,0.07];
-const TIME_LABELS = ["Morning","Late Morning","Midday","Afternoon","Late Afternoon","Closing Time"];
-
-let G = {}; // game state
-let simAnim = null; // animation frame ref
-let customers = []; // active customer sprites
-
-
-function drawWeatherCanvas(){
-  const canvas=document.getElementById('wx-canvas');
-  if(!canvas||!G.weather) return;
-  const W=700,H=110;
-  const ctx=canvas.getContext('2d');
-  ctx.clearRect(0,0,W,H);
-  const d=G.weather.demand;
-  // Sky gradient
-  const sky=ctx.createLinearGradient(0,0,0,H);
-  if(d>=0.85){ sky.addColorStop(0,'#87CEEB'); sky.addColorStop(1,'#B0E0FF'); }
-  else if(d>=0.55){ sky.addColorStop(0,'#A8C8E8'); sky.addColorStop(1,'#C8D8E8'); }
-  else if(d>=0.3){ sky.addColorStop(0,'#8090A8'); sky.addColorStop(1,'#A0B0C0'); }
-  else { sky.addColorStop(0,'#4A5568'); sky.addColorStop(1,'#6A7890'); }
-  ctx.fillStyle=sky; ctx.fillRect(0,0,W,H);
-
-  if(d>=0.85){
-    // Sun
-    ctx.fillStyle='rgba(255,220,0,.9)';
-    ctx.beginPath(); ctx.arc(W-60,30,24,0,Math.PI*2); ctx.fill();
-    ctx.strokeStyle='rgba(255,200,0,.6)'; ctx.lineWidth=3;
-    for(let i=0;i<8;i++){
-      const a=(i/8)*Math.PI*2; ctx.beginPath();
-      ctx.moveTo(W-60+Math.cos(a)*30,30+Math.sin(a)*30);
-      ctx.lineTo(W-60+Math.cos(a)*42,30+Math.sin(a)*42); ctx.stroke();
-    }
-  } else if(d>=0.55){
-    // Sun + cloud
-    ctx.fillStyle='rgba(255,220,0,.7)'; ctx.beginPath(); ctx.arc(W-80,25,18,0,Math.PI*2); ctx.fill();
-    // Cloud
-    ctx.fillStyle='rgba(255,255,255,.9)';
-    [[W-30,35,22],[W-58,32,16],[W-8,38,14]].forEach(([x,y,r])=>{ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();});
-  } else if(d>=0.3){
-    // Overcast clouds
-    ctx.fillStyle='rgba(200,210,220,.8)';
-    [[80,25,30],[200,20,24],[350,28,28],[500,22,25],[630,30,22]].forEach(([x,y,r])=>{
-      ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
-    });
-  } else {
-    // Rain clouds + drops
-    ctx.fillStyle='rgba(140,150,165,.85)';
-    [[60,20,28],[200,15,22],[360,22,30],[520,18,25],[650,25,20]].forEach(([x,y,r])=>{
-      ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
-    });
-    ctx.strokeStyle='rgba(120,160,220,.7)'; ctx.lineWidth=1.5;
-    for(let i=0;i<20;i++){
-      const rx=(i*47)%W, ry=50+(i*23)%50;
-      ctx.beginPath(); ctx.moveTo(rx,ry); ctx.lineTo(rx-4,ry+14); ctx.stroke();
-    }
-  }
-
-  // Bottom strip with info
-  ctx.fillStyle='rgba(26,46,74,.75)'; ctx.fillRect(0,H-38,W,38);
-  // Weather emoji + label
-  ctx.font='bold 18px Nunito,Arial'; ctx.textAlign='left'; ctx.fillStyle='#fff';
-  ctx.fillText(G.weather.emoji+' '+G.weather.label, 14, H-16);
-  ctx.font='13px Nunito,Arial'; ctx.fillStyle='rgba(255,255,255,.65)';
-  ctx.fillText(G.weather.desc, 14, H-4);
-  // Demand bar on right
-  ctx.font='bold 10px Nunito,Arial'; ctx.textAlign='right'; ctx.fillStyle='rgba(255,255,255,.55)';
-  ctx.fillText('DEMAND', W-12, H-22);
-  const barW=150, barH=8, barX=W-12-barW, barY=H-16;
-  ctx.fillStyle='rgba(255,255,255,.2)'; ctx.beginPath(); ctx.roundRect(barX,barY,barW,barH,4); ctx.fill();
-  const fillW=barW*d;
-  const fc=d>=0.8?'#F5C800':d>=0.5?'#FFB74D':'#78909C';
-  ctx.fillStyle=fc; ctx.beginPath(); ctx.roundRect(barX,barY,fillW,barH,4); ctx.fill();
-  const demLabel=d>=0.85?'Very High':d>=0.65?'High':d>=0.4?'Moderate':d>=0.2?'Low':'Very Low';
-  ctx.fillStyle=fc; ctx.font='bold 10px Nunito,Arial';
-  ctx.fillText(demLabel, W-12, H-4);
+const RING=[[-1,-1],[0,-1],[1,-1],[-1,0],[1,0],[-1,1],[0,1],[1,1]],PLUS=[[0,-1],[-1,0],[1,0],[0,1]];
+function treeCells(trunkH,layers){
+  const c=[];for(let y=0;y<trunkH;y++)c.push([0,y,0,14]);
+  layers.forEach(l=>{l[1].forEach(p=>c.push([p[0],l[0],p[1],l[2]]))});return c;
 }
-
-function initGame() {
-  G = { day:1, balance:10.00, balanceHistory:[10.00], log:[], weather:null,
-        stock:{ cups:0,lemons:0,sugar:0,ice:0 },
-        stockMax:{ cups:1,lemons:1,sugar:1,ice:1 },
-        simSold:0, simRevenue:0, simCost:0, lpc:2, spc:2, ipc:2, price:0.5,
-        satHappy:0, satPrice:0, satTaste:0, satSoldout:0,
-        profitHistory:[],
-        canMake:0, simRunning:false };
-  customers = [];
+const STAMPS=[
+ {name:'Broadleaf tree',group:'Lower slopes',icon:'oak',cells:treeCells(3,[[2,RING,15],[3,RING,15],[3,[[0,0]],15],[4,PLUS,15],[4,[[0,0]],15]])},
+ {name:'Pine tree',group:'Higher slopes',icon:'pine',cells:treeCells(5,[[2,RING,16],[3,PLUS,16],[4,PLUS,16],[5,[[0,0]],16]])},
+ {name:'Snowy pine',group:'Near the snow line',icon:'snowy',cells:treeCells(5,[[2,RING,16],[3,PLUS,16],[4,PLUS,13],[5,[[0,0]],13]])}
+];
+const TIPS={"Grass": "Grows on soil at the surface.", "Topsoil": "Soil. The dark, crumbly top layer where plants grow.", "Clay": "Soil. Heavy and sticky, made of very fine particles.", "Sand": "Loose grains of worn-down rock.", "Sandstone": "Sedimentary rock. Sand pressed together in layers.", "Limestone": "Sedimentary rock. Made mostly from the shells and skeletons of sea creatures.", "Slate": "Metamorphic rock. Mudstone changed by heat and pressure. It splits into flat sheets.", "Marble": "Metamorphic rock. Limestone changed by heat and pressure.", "Granite": "Igneous rock. Magma that cooled slowly underground.", "Basalt": "Igneous rock. Lava that cooled quickly at the surface.", "Magma": "Melted rock from deep underground. It is called lava when it reaches the surface.", "Water": "Use for rivers, lakes and the sea.", "Snow": "Found on high peaks where it is too cold to melt.", "Wood": "Tree trunk. Use it to build your own trees.", "Leaves": "Leaves of a broadleaf tree.", "Pine needles": "Thin leaves of a conifer tree.", "Broadleaf tree": "Plants a whole tree in one tap. Broadleaf trees grow on warmer, lower slopes.", "Pine tree": "Plants a whole tree in one tap. Conifers cope with the cold higher up.", "Snowy pine": "Plants a whole tree in one tap. The last trees before the snow line."};
+function stampIcon(kind){
+  const c=document.createElement('canvas');c.width=c.height=16;const g=c.getContext('2d');
+  g.fillStyle='#bfe3f2';g.fillRect(0,0,16,16);g.fillStyle='#6e4f2e';g.fillRect(7,9,2,7);
+  if(kind==='oak'){g.fillStyle='#3f8f3a';g.fillRect(3,3,10,7);g.fillRect(5,1,6,2)}
+  else{for(let r=0;r<10;r++){g.fillStyle=(kind==='snowy'&&r<4)?'#fbfdff':'#24573a';const w=2+2*Math.floor(r/2);g.fillRect(8-w/2,1+r,w,1)}}
+  return c.toDataURL();
 }
+const NB=BLOCKS.length;
+let world=new Uint8Array(W*H*D);
+const idx=(x,y,z)=>x+W*(z+D*y);
+const inb=(x,y,z)=>x>=0&&x<W&&y>=0&&y<H&&z>=0&&z<D;
+const dec=i=>[i%W,Math.floor(i/(W*D)),Math.floor(i/W)%D];
+let cut=D-1, tool='build', sel=1, stamp=null;
+const undoStack=[];
 
-function fmt(n){ return parseFloat(n).toFixed(2); }
-
-function pickWeather(){
-  let r=Math.random(), s=0;
-  for(let i=0;i<W_WEIGHTS.length;i++){ s+=W_WEIGHTS[i]; if(r<s) return WEATHERS[i]; }
-  return WEATHERS[1];
-}
-
-// ══════════════════════════════════════
-// PLAN SCREEN
-// ══════════════════════════════════════
-function showScreen(id){
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-}
-
-function initDay(){
-  // Switch screen FIRST before anything else can crash
-  showScreen('plan-screen');
-  document.getElementById('sim-result').style.display='none';
-  G.weather = pickWeather();
-  document.getElementById('weather-emoji').textContent = G.weather.emoji;
-  document.getElementById('weather-label').textContent = G.weather.label;
-  document.getElementById('weather-desc').textContent  = G.weather.desc;
-  const dp = Math.round(G.weather.demand*100);
-  document.getElementById('demand-bar').style.width = dp+'%';
-  document.getElementById('demand-value').textContent = dp>=85?'Very High':dp>=65?'High':dp>=40?'Moderate':dp>=20?'Low':'Very Low';
-  document.getElementById('h-day').textContent = G.day;
-  document.getElementById('h-balance').textContent = fmt(G.balance);
-  document.getElementById('day-label-n').textContent = G.day;
-  document.getElementById('day-bar').style.width = ((G.day/30)*100)+'%';
-
-  G.satHappy=0; G.satPrice=0; G.satTaste=0; G.satSoldout=0; G.profitHistory=[];
-  updateCostSummary();
-  drawChart();
-  setTimeout(drawWeatherCanvas,50);
-  // Yesterday banner
-  const banner=document.getElementById('yesterday-banner');
-  if(G._yesterday && G.day>1){
-    const y=G._yesterday;
-    const profWord=y.profit>=0?'made':'lost';
-    const sign=y.profit>=0?'+':'';
-    document.getElementById('yesterday-text').innerHTML=
-      `Day ${y.day}: you ${profWord} <strong>${sign}€${fmt(y.profit)}</strong> - that has been added to your fund.`;
-    document.getElementById('yesterday-balance').textContent='€'+fmt(y.balance);
-    banner.style.display='flex';
-  } else {
-    banner.style.display='none';
+/* ---------- textures ---------- */
+function rng(s){return()=>{s=(Math.imul(s,1664525)+1013904223)>>>0;return s/4294967296}}
+function hex(h){return[parseInt(h.slice(1,3),16),parseInt(h.slice(3,5),16),parseInt(h.slice(5,7),16)]}
+function paint(g,o,seed,y0,y1){
+  const r=rng(seed),[R,G,B]=hex(o.c);
+  for(let y=y0;y<y1;y++)for(let x=0;x<16;x++){
+    let k=1+(r()-.5)*o.v; if(o.bands&&y%4===3)k*=.84;
+    let col=[R*k,G*k,B*k];
+    if(o.speck&&r()<o.sp)col=hex(o.speck[Math.floor(r()*o.speck.length)]);
+    g.fillStyle='rgb('+col.map(n=>Math.max(0,Math.min(255,n|0))).join(',')+')';
+    g.fillRect(x,y,1,1);
   }
 }
+function makeCanvas(o,seed){
+  const c=document.createElement('canvas');c.width=c.height=16;
+  paint(c.getContext('2d'),o,seed,0,16);return c;
+}
+function grassSide(seed){
+  const c=makeCanvas(BLOCKS[2],seed),g=c.getContext('2d'),r=rng(seed+9);
+  paint(g,BLOCKS[1],seed+3,0,4);
+  for(let x=0;x<16;x++)if(r()<.5){g.fillStyle='#4f9034';g.fillRect(x,4,1,1)}
+  return c;
+}
+function toTex(c){const t=new THREE.CanvasTexture(c);t.magFilter=THREE.NearestFilter;t.minFilter=THREE.NearestFilter;return t}
 
-function updateCostSummary(){
-  const c=+document.getElementById('cups').value||0;
-  const l=+document.getElementById('lemons').value||0;
-  const s=+document.getElementById('sugar').value||0;
-  const i=+document.getElementById('ice').value||0;
-  const lpc=+document.getElementById('lpc').value||2;
-  const spc=+document.getElementById('spc').value||2;
-  const ipc=+document.getElementById('ipc').value||2;
-  const cost=c*0.02+l*0.05+s*0.03+i*0.01;
-  document.getElementById('stock-cost').textContent=fmt(cost);
-  document.getElementById('balance-after').textContent=fmt(G.balance-cost);
-  // Check ingredient mismatch
-  const warnEl=document.getElementById('recipe-warning');
-  const byL=lpc>0?Math.floor(l/lpc):9999;
-  const byS=spc>0?Math.floor(s/spc):9999;
-  const byI=ipc>0?Math.floor(i/ipc):9999;
-  const canMake=Math.min(c,byL,byS,byI);
-  const warnings=[];
-  if(c>0){
-    if(byL<c) warnings.push('⚠️ Only enough lemons for '+byL+' cups (need '+(c*lpc)+', have '+l+')');
-    if(byS<c) warnings.push('⚠️ Only enough sugar for '+byS+' cups (need '+(c*spc)+', have '+s+')');
-    if(byI<c) warnings.push('⚠️ Only enough ice for '+byI+' cups (need '+(c*ipc)+', have '+i+')');
+/* ---------- scene ---------- */
+const canvas=document.getElementById('view');
+const renderer=new THREE.WebGLRenderer({canvas,antialias:true,preserveDrawingBuffer:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+const scene=new THREE.Scene();scene.background=new THREE.Color('#bfe3f2');
+const camera=new THREE.PerspectiveCamera(50,1,.1,600);
+scene.add(new THREE.HemisphereLight(0xffffff,0x8a8370,.85));
+const sun=new THREE.DirectionalLight(0xffffff,.65);sun.position.set(30,50,20);scene.add(sun);
+
+const groundMat=new THREE.MeshLambertMaterial({color:0x4a5a4c});
+let ground=null,grid=null,pickables=[];
+const boxGeo=new THREE.BoxGeometry(1,1,1);
+const mats=[null],meshes=[null],lookup=[null],swatch=[null];
+for(let t=1;t<NB;t++){
+  const o=BLOCKS[t];let mat,sw;
+  if(o.kind==='grass'){
+    const top=makeCanvas(o,t*7),side=grassSide(t*11),bot=makeCanvas(BLOCKS[2],t*13);
+    const m=c=>new THREE.MeshLambertMaterial({map:toTex(c)});
+    mat=[m(side),m(side),m(top),m(bot),m(side),m(side)];sw=side;
+  }else{
+    const c=makeCanvas(o,t*7);sw=c;
+    if(o.glow)mat=new THREE.MeshBasicMaterial({map:toTex(c)});
+    else if(o.water)mat=new THREE.MeshLambertMaterial({map:toTex(c),transparent:true,opacity:.62,depthWrite:false});
+    else mat=new THREE.MeshLambertMaterial({map:toTex(c)});
   }
-  if(warnings.length>0){
-    warnEl.innerHTML=warnings.join('<br>')+'<br><strong>You can actually make '+canMake+' cups.</strong>';
-    warnEl.style.display='block';
-  } else {
-    warnEl.style.display='none';
+  mats.push(mat);meshes.push(null);lookup.push([]);swatch.push(sw.toDataURL());
+}
+function makeMesh(t,cap){
+  if(meshes[t]){scene.remove(meshes[t]);if(meshes[t].dispose)meshes[t].dispose()}
+  const im=new THREE.InstancedMesh(boxGeo,mats[t],cap);
+  im.count=0;im.frustumCulled=false;im.userData.t=t;im.userData.cap=cap;if(BLOCKS[t].water)im.renderOrder=2;
+  scene.add(im);meshes[t]=im;
+}
+function setupDims(w){
+  W=D=w;
+  if(ground){scene.remove(ground);ground.geometry.dispose();scene.remove(grid);grid.geometry.dispose()}
+  ground=new THREE.Mesh(new THREE.PlaneGeometry(W,D),groundMat);ground.rotation.x=-Math.PI/2;scene.add(ground);
+  grid=new THREE.GridHelper(W,W,0x2b3a2e,0x2b3a2e);grid.position.y=.01;scene.add(grid);
+  for(let t=1;t<NB;t++){makeMesh(t,2048);lookup[t].length=0}
+  pickables=[ground].concat(meshes.slice(1));
+  cut=D-1;const sl=document.getElementById('cut');sl.max=D-1;sl.value=cut;
+  document.querySelectorAll('[data-size]').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.size===W));
+}
+function resizeLand(n){
+  if(n===W)return;
+  const old=world,ow=W,off=Math.floor((n-ow)/2);
+  undoStack.length=0;undoStack.push({snap:old,W:ow,labels:cloneLabels()});
+  setupDims(n);
+  const w=new Uint8Array(W*H*D);
+  for(let y=0;y<H;y++)for(let z=0;z<ow;z++)for(let x=0;x<ow;x++){
+    const t=old[x+ow*(z+ow*y)];if(!t)continue;
+    const nx=x+off,nz=z+off;
+    if(nx>=0&&nx<W&&nz>=0&&nz<D)w[idx(nx,y,nz)]=t;
   }
+  world=w;labels=labels.map(l=>({x:l.x+off,y:l.y,z:l.z+off,text:l.text})).filter(l=>inb(l.x,l.y,l.z));
+  captureBaseline();renderLabels();setView('3d');rebuild();
 }
 
-function updatePriceHint(){
-  const price=+document.getElementById('price').value||0.5;
-  const d=G.weather?G.weather.demand:0.8;
-  let hint='';
-  if(d>=0.85) hint=price<0.6?'You could charge more - demand is very high.':price>1.2?'Even on a hot day, that might scare people off.':'Good price for this weather.';
-  else if(d>=0.6) hint=price<0.4?'You could charge a bit more.':price>0.9?'Might be too high for a normal day.':'Reasonable for today.';
-  else if(d>=0.35) hint=price>0.7?'Demand is low - drop the price to attract buyers.':'Sensible for a quiet day.';
-  else hint=price>0.5?'Very low demand - a low price is your best bet.':'Smart to price low when demand is down.';
-  document.getElementById('price-hint').textContent=hint;
-}
+const ghost=new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1.02,1.02,1.02)),
+  new THREE.LineBasicMaterial({color:0xffcf33}));
+ghost.visible=false;scene.add(ghost);
 
-['cups','lemons','sugar','ice'].forEach(id=>document.getElementById(id).addEventListener('input',updateCostSummary));
-['lpc','spc','ipc'].forEach(id=>document.getElementById(id).addEventListener('input',()=>{
-  document.getElementById(id+'-val').textContent=document.getElementById(id).value;
-}));
-document.getElementById('price').addEventListener('input',updatePriceHint);
-
-// ══════════════════════════════════════
-// START SIMULATION
-// ══════════════════════════════════════
-function startSim(){
-  const cups   = +document.getElementById('cups').value||0;
-  const lemons = +document.getElementById('lemons').value||0;
-  const sugar  = +document.getElementById('sugar').value||0;
-  const ice    = +document.getElementById('ice').value||0;
-  const lpc    = +document.getElementById('lpc').value;
-  const spc    = +document.getElementById('spc').value;
-  const ipc    = +document.getElementById('ipc').value;
-  const price  = +document.getElementById('price').value||0.5;
-  const cost   = cups*0.02+lemons*0.05+sugar*0.03+ice*0.01;
-
-  if(cost>G.balance){ alert("You can't afford that stock! Reduce your order."); return; }
-
-  // Deduct stock cost
-  G.balance -= cost;
-
-  // Calculate max cups we can make
-  const byL = lpc>0?Math.floor(lemons/lpc):9999;
-  const byS = spc>0?Math.floor(sugar/spc):9999;
-  const byI = ipc>0?Math.floor(ice/ipc):9999;
-  const canMake = Math.min(cups,byL,byS,byI);
-
-  G.stock = { cups:canMake, lemons:lemons, sugar:sugar, ice:ice };
-  G.stockMax = { cups:Math.max(canMake,1), lemons:Math.max(lemons,1), sugar:Math.max(sugar,1), ice:Math.max(ice,1) };
-  G.lpc=lpc; G.spc=spc; G.ipc=ipc; G.price=price;
-  G.simCost=cost; G.simSold=0; G.simRevenue=0;
-  G.canMake=canMake; G.simRunning=true;
-
-  // Compute total customers for the day (done upfront, revealed progressively)
-  const rqScore = recipeQuality(lpc,spc,ipc);
-  const priceEffect = Math.max(0,1-Math.pow(Math.max(0,price-0.15)/1.5,1.4));
-  const effectiveDemand = G.weather.demand * priceEffect * rqScore;
-  const maxC = Math.round(30*effectiveDemand);
-  const rf = 0.8+Math.random()*0.4;
-  G.totalCustomers = Math.round(maxC*rf);
-  G.totalWillBuy = Math.min(canMake, G.totalCustomers);
-  G.customersSeen = 0;
-  G.rqScore = rqScore;
-
-  customers=[];
-  showScreen('sim-screen');
-  updateStockBars();
-  updateHUD();
-  runSimulation();
-}
-
-function recipeQuality(lpc,spc,ipc){
-  const l=1-Math.abs(lpc-2)*0.15;
-  const s=1-Math.abs(spc-2)*0.12;
-  const i=1-Math.abs(ipc-2)*0.10;
-  return Math.max(0.2, l*s*i);
-}
-
-// ══════════════════════════════════════
-// SIMULATION LOOP
-// ══════════════════════════════════════
-const SCENE_W=960, SCENE_H=340;
-const STAND_X=160, STAND_Y=190;
-
-// Customer sprite colours
-const CUSTOMER_COLOURS=['#E57373','#64B5F6','#81C784','#FFB74D','#BA68C8','#4DB6AC','#F06292','#A1887F'];
-
-let simTick=0;
-let lastCustomerTick=0;
-let simDone=false;
-const TOTAL_TICKS=360; // frames for full day
-const CUSTOMER_INTERVAL=18; // ticks between customer spawns
-
-const FRAME_MS = 1000/30; // 30fps cap
-let lastFrameTime = 0;
-
-function runSimulation(){
-  const canvas=document.getElementById('scene-canvas');
-  canvas.width=SCENE_W; canvas.height=SCENE_H;
-  simTick=0; lastCustomerTick=0; G.simDone=false;
-  lastFrameTime=0;
-
-  function loop(ts){
-    if(ts - lastFrameTime < FRAME_MS){ simAnim=requestAnimationFrame(loop); return; }
-    lastFrameTime=ts;
-    simTick++;
-    spawnCustomers();
-    updateCustomers();
-    drawScene();
-    updateHUD();
-    // End when ticks done + small grace period for customers to clear
-    // Hard cap at TOTAL_TICKS+90 so a stuck customer never blocks the day ending
-    if(simTick < TOTAL_TICKS + 90 && (simTick < TOTAL_TICKS || customers.length > 0)){
-      simAnim=requestAnimationFrame(loop);
-    } else {
-      customers=[];
-      if(!G.simDone){ G.simDone=true; endSim(); }
+function shown(x,y,z){return inb(x,y,z)&&z<=cut?world[idx(x,y,z)]:0}
+const N6=[[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
+const M=new THREE.Matrix4();
+function rebuild(){
+  for(let t=1;t<NB;t++)lookup[t].length=0;
+  for(let y=0;y<H;y++)for(let z=0;z<=cut;z++)for(let x=0;x<W;x++){
+    const i=idx(x,y,z),t=world[i];if(!t)continue;
+    const water=BLOCKS[t].water;
+    for(let k=0;k<6;k++){
+      const d=N6[k],nt=shown(x+d[0],y+d[1],z+d[2]);
+      if(nt===0||(!water&&BLOCKS[nt].water)){lookup[t].push(i);break}
     }
   }
-  simAnim=requestAnimationFrame(loop);
+  let grown=false;
+  for(let t=1;t<NB;t++){
+    const L=lookup[t];
+    if(L.length>meshes[t].userData.cap){makeMesh(t,Math.ceil(L.length*1.5));grown=true}
+    const m=meshes[t];
+    for(let n=0;n<L.length;n++){
+      const i=L[n];
+      M.makeTranslation(i%W+.5-W/2,Math.floor(i/(W*D))+.5,Math.floor(i/W)%D+.5-D/2);
+      m.setMatrixAt(n,M);
+    }
+    m.count=L.length;m.instanceMatrix.needsUpdate=true;
+  }
+  if(grown)pickables=[ground].concat(meshes.slice(1));
+  checkClimbers();
+  if(mapOpen)drawMap();
+  scheduleSave();
 }
 
-function spawnCustomers(){
-  if(simTick>=TOTAL_TICKS) return;
-  if(simTick-lastCustomerTick < CUSTOMER_INTERVAL) return;
-  if(G.customersSeen >= G.totalCustomers) return;
-  lastCustomerTick=simTick;
-  G.customersSeen++;
-
-  const willBuy = G.customersSeen <= G.totalWillBuy && G.stock.cups > 0;
-  const colour=CUSTOMER_COLOURS[Math.floor(Math.random()*CUSTOMER_COLOURS.length)];
-  // Three distinct lanes so customers don't overlap
-  const lane=[245,260,275][Math.floor(Math.random()*3)];
-  customers.push({
-    x:SCENE_W+30, y:lane,
-    speed:2.5+Math.random()*1.5,
-    state:'walking', // walking | buying | leaving | done
-    willBuy, colour,
-    buyTimer:0, leaveDir:1,
-    happy: willBuy && G.rqScore>0.6,
-    bubble:null, bubbleTimer:0
-  });
+/* ---------- hidden climbers: mountaineer 15, bear 20, goat 25, eagle 30, troll 35, gem 40 ---------- */
+function topY(x,z){
+  for(let y=H-1;y>=0;y--){const t=world[idx(x,y,z)];if(t)return BLOCKS[t].water?-1:y+1}
+  return 0;
 }
-
-function updateCustomers(){
-  customers.forEach(c=>{
-    if(c.state==='walking'){
-      c.x -= c.speed;
-      if(c.x <= STAND_X+90){
-        if(c.willBuy && G.stock.cups>0){
-          c.state='buying';
-          c.buyTimer=30;
-          G.stock.cups   = Math.max(0,G.stock.cups-1);
-          G.stock.lemons = Math.max(0,G.stock.lemons-G.lpc);
-          G.stock.sugar  = Math.max(0,G.stock.sugar-G.spc);
-          G.stock.ice    = Math.max(0,G.stock.ice-G.ipc);
-          G.simSold++;
-          G.simRevenue += G.price;
-          G.satHappy++;
-          c.bubble = c.happy? '😊' : G.rqScore<0.4? '😐' : '🙂';
-          c.bubbleTimer=50;
-          updateStockBars();
-        } else {
-          c.state='leaving';
-          if(G.stock.cups===0){ c.bubble='😞'; G.satSoldout++; }
-          else if(!c.willBuy && G.price>0.9){ c.bubble='💸'; G.satPrice++; }
-          else if(!c.willBuy && G.rqScore<0.5){ c.bubble='🤢'; G.satTaste++; }
-          else { c.bubble='🤔'; G.satOther=G.satOther||0; G.satOther++; }
-          c.bubbleTimer=35;
-        }
+function standPos(x,z,v){return v.set(x+.5-W/2,Math.max(0,topY(x,z)),z+.5-D/2)}
+let baseline=new Int16Array(W*D);
+function captureBaseline(){
+  baseline=new Int16Array(W*D);
+  for(let z=0;z<D;z++)for(let x=0;x<W;x++)baseline[x+W*z]=Math.max(0,topY(x,z));
+}
+/* Blocks laid: every block the player has added above the ground they started on
+   (digging out the starting layers doesn't count against them). Resets whenever a
+   new model, a new size, or a different starting land is chosen. */
+function blocksPlaced(){
+  let n=0;
+  for(let z=0;z<D;z++)for(let x=0;x<W;x++){
+    const base=baseline[x+W*z];
+    for(let y=base;y<H;y++)if(world[idx(x,y,z)])n++;
+  }
+  return n;
+}
+const lam=c=>new THREE.MeshLambertMaterial({color:c});
+function makeClimber(o){
+  const g=new THREE.Group();g.visible=false;g.scale.setScalar(o.scale||1);scene.add(g);
+  o.build((w,h,d,x,y,z,m)=>{const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);b.position.set(x,y,z);g.add(b)});
+  const c={on:false,x:0,z:0,hop:false,t0:0,next:0,from:new THREE.Vector3(),to:new THREE.Vector3()};
+  return{
+    c:c,
+    check(peak,area){
+      const top=peak>=0?Math.floor(peak/(W*D)):-1,tall=o.when?o.when(area,top):area>=o.minArea;
+      if(peak<0)peak=idx(W>>1,0,D>>1);
+      if(!tall){c.on=false;g.visible=false;return}
+      if(!c.on||!inb(c.x,0,c.z)){
+        const fresh=!c.on;
+        c.on=true;c.hop=false;
+        c.x=Math.max(0,Math.min(W-1,peak%W+(o.spawnDX||0)));
+        c.z=Math.max(0,Math.min(D-1,Math.floor(peak/W)%D+(o.spawnDZ||0)));
+        standPos(c.x,c.z,g.position);c.next=performance.now()+o.pause;
+        if(fresh)say(o.msg,o.msgMs);
       }
-    } else if(c.state==='buying'){
-      c.buyTimer--;
-      if(c.bubbleTimer>0) c.bubbleTimer--;
-      if(c.buyTimer<=0){ c.state='leaving'; c.leaveDir=-1; }
-    } else if(c.state==='leaving'){
-      c.x += c.speed*1.2*(c.leaveDir<0?-1:1);
-      if(c.bubbleTimer>0) c.bubbleTimer--;
-      if(c.x>SCENE_W+60 || c.x<-60) c.state='done';
+    },
+    tick(now){
+      if(!c.on)return;
+      g.visible=c.z<=cut;
+      if(c.hop){
+        const k=Math.min(1,(now-c.t0)/o.dur);
+        g.position.lerpVectors(c.from,c.to,k);
+        g.position.y+=Math.sin(k*Math.PI)*(o.lift+Math.abs(c.to.y-c.from.y)*.3);
+        if(k>=1){c.hop=false;c.next=now+o.pause*(.4+Math.random()*1.6)}
+        return;
+      }
+      standPos(c.x,c.z,g.position);
+      if(now<c.next)return;
+      const here=Math.max(0,topY(c.x,c.z)),opts=[];let total=0;
+      for(let dz=-1;dz<=1;dz++)for(let dx=-1;dx<=1;dx++){
+        if(!dx&&!dz)continue;
+        const x=c.x+dx,z=c.z+dz;if(!inb(x,0,z))continue;
+        const h=topY(x,z);if(h<0||Math.abs(h-here)>o.step)continue;
+        const w=Math.pow(o.uphill,h-here);opts.push([x,z,w]);total+=w;
+      }
+      c.from.copy(g.position);
+      if(opts.length){
+        let r=Math.random()*total,pick=opts[0];
+        for(let n=0;n<opts.length;n++){r-=opts[n][2];if(r<=0){pick=opts[n];break}}
+        g.rotation.y=Math.atan2(-(pick[1]-c.z),pick[0]-c.x);
+        c.x=pick[0];c.z=pick[1];
+      }
+      standPos(c.x,c.z,c.to);c.hop=true;c.t0=now;
     }
+  };
+}
+const GOAT_THRESHOLDS=[200,215,230,245],GOAT_OFFSETS=[[0,0],[2,1],[-2,1],[1,-2]],RAM_THRESHOLD=260;
+function buildGoat(box,big){
+  const coat=lam(0xf4f1e8),dark=lam(0x4a3d30),horn=lam(0x8a7658);
+  box(.7,.36,.34,0,.5,0,coat);box(.26,.26,.26,.42,.72,0,coat);box(.12,.1,.14,.58,.68,0,coat);box(.06,.14,.06,.5,.55,0,coat);
+  if(big){
+    box(.06,.3,.06,.34,.95,.11,horn);box(.06,.3,.06,.34,.95,-.11,horn);
+    box(.1,.07,.06,.3,1.2,.16,horn);box(.1,.07,.06,.3,1.2,-.16,horn);
+  }else{
+    box(.05,.2,.05,.36,.93,.08,horn);box(.05,.2,.05,.36,.93,-.08,horn);
+  }
+  box(.04,.04,.04,.52,.78,.14,dark);box(.04,.04,.04,.52,.78,-.14,dark);
+  box(.1,.1,.1,-.38,.62,0,coat);
+  [[.24,.11],[.24,-.11],[-.24,.11],[-.24,-.11]].forEach(p=>{box(.1,.26,.1,p[0],.2,p[1],coat);box(.11,.08,.11,p[0],.04,p[1],dark)});
+}
+const climbers=[
+  makeClimber({minArea:150,step:1,uphill:1,dur:600,pause:1300,lift:.2,
+    msg:'A grizzly bear has wandered in! You have laid 150 blocks.',
+    build(box){
+      const fur=lam(0x6b4423),light=lam(0xa67c52),dark=lam(0x2a1c12);
+      box(1,.5,.52,0,.52,0,fur);box(.34,.16,.44,.24,.82,0,fur);
+      box(.36,.34,.38,.62,.62,0,fur);box(.16,.14,.2,.86,.55,0,light);box(.06,.06,.08,.95,.6,0,dark);
+      box(.08,.1,.1,.6,.84,.15,fur);box(.08,.1,.1,.6,.84,-.15,fur);
+      box(.04,.04,.04,.8,.7,.12,dark);box(.04,.04,.04,.8,.7,-.12,dark);
+      box(.1,.1,.12,-.54,.62,0,fur);
+      [[.33,.16],[.33,-.16],[-.33,.16],[-.33,-.16]].forEach(p=>{box(.2,.3,.18,p[0],.15,p[1],fur)});
+    }}),
+  /* a small herd: up to four goats as the footprint grows, then a big horned ram as the fifth */
+  ...GOAT_THRESHOLDS.map((th,i)=>makeClimber({minArea:th,step:2,uphill:1.6,dur:450,pause:800,lift:.5,
+    spawnDX:GOAT_OFFSETS[i][0],spawnDZ:GOAT_OFFSETS[i][1],
+    msg:i===0?'A mountain goat has moved in! You have laid '+th+' blocks.'
+             :'Another mountain goat joins the herd! You have laid '+th+' blocks.',
+    build(box){buildGoat(box,false)}
+  })),
+  makeClimber({minArea:RAM_THRESHOLD,step:2,uphill:1.7,dur:420,pause:750,lift:.55,scale:1.4,
+    spawnDX:-2,spawnDZ:-2,
+    msg:'A huge ram with curling horns has taken over the herd! You have laid '+RAM_THRESHOLD+' blocks.',
+    build(box){buildGoat(box,true)}
+  }),
+  makeClimber({minArea:100,step:1,uphill:2.2,dur:650,pause:1500,lift:.25,
+    msg:'A mountaineer has arrived! You have laid 100 blocks.',
+    build(box){
+      const jacket=lam(0x1f2a44),trousers=lam(0x2b2f3a),skin=lam(0xe0ac84),hair=lam(0x2e2019),boot=lam(0x33302c),pack=lam(0x3f7a4a),
+            steel=lam(0xb9c0c7),shirt=lam(0xf4f4f1),strap=lam(0x9aa0a6),frame=lam(0x15171a),lens=lam(0xcfe3ee);
+      [.1,-.1].forEach(z=>{box(.14,.34,.14,0,.25,z,trousers);box(.18,.1,.15,.02,.05,z,boot)});
+      box(.24,.4,.38,0,.62,0,jacket);                                   /* navy blazer */
+      box(.02,.34,.12,.125,.64,0,shirt);                                /* white shirt */
+      box(.02,.2,.025,.137,.7,.035,strap);box(.02,.2,.025,.137,.7,-.035,strap);box(.02,.06,.07,.137,.56,0,shirt); /* staff lanyard */
+      box(.1,.36,.1,0,.62,.25,jacket);box(.1,.36,.1,.06,.64,-.25,jacket);
+      box(.24,.24,.24,0,.95,0,skin);                                    /* head */
+      box(.27,.08,.27,0,1.1,0,hair);box(.06,.2,.27,-.11,.98,0,hair);    /* dark hair */
+      box(.05,.1,.22,.11,.87,0,hair);box(.16,.1,.03,.03,.87,.115,hair);box(.16,.1,.03,.03,.87,-.115,hair); /* beard */
+      box(.02,.07,.23,.125,.99,0,frame);box(.022,.045,.075,.128,.99,.055,lens);box(.022,.045,.075,.128,.99,-.055,lens); /* glasses */
+      box(.16,.34,.3,-.2,.64,0,pack);
+      box(.04,.6,.04,.14,.4,-.3,boot);box(.2,.05,.05,.14,.7,-.3,steel);
+    }})
+];
+/* eagles: a small flock circles the summit once the mountain is over 20 blocks high */
+function makeEagle(radius,speed,phase,heightOffset){
+  const g=new THREE.Group(),tilt=new THREE.Group(),wl=new THREE.Group(),wr=new THREE.Group();
+  g.add(tilt);tilt.add(wl,wr);g.visible=false;scene.add(g);tilt.rotation.x=.3;
+  const brown=lam(0x3b2a1e),white=lam(0xf7f5ee),yellow=lam(0xf2b01e);
+  const add=(p,w,h,d,x,y,z,m)=>{const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);b.position.set(x,y,z);p.add(b)};
+  add(tilt,.8,.22,.26,0,0,0,brown);add(tilt,.24,.22,.22,.5,.05,0,white);add(tilt,.12,.08,.1,.67,.02,0,yellow);
+  add(tilt,.3,.06,.32,-.52,0,0,white);
+  wl.position.set(0,.08,.13);add(wl,.42,.05,1.05,0,0,.52,brown);
+  wr.position.set(0,.08,-.13);add(wr,.42,.05,1.05,0,0,-.52,brown);
+  const c={on:false,cx:0,cy:0,cz:0,pz:0};
+  return{
+    check(peak,area,fresh){
+      const top=peak>=0?Math.floor(peak/(W*D)):-1;
+      if(!(top>20)){c.on=false;g.visible=false;return}
+      c.cy=top+1+heightOffset;
+      c.pz=Math.floor(peak/W)%D;c.cx=peak%W+.5-W/2;c.cz=c.pz+.5-D/2;
+      if(!c.on){c.on=true;if(fresh)say('A flock of eagles is circling your summit! Your mountain is over 20 blocks high.')}
+    },
+    tick(now){
+      if(!c.on)return;
+      g.visible=c.pz<=cut;
+      const a=now/2600*speed+phase,r=radius,f=.15+Math.sin(now/260+phase)*.35;
+      g.position.set(c.cx+Math.cos(a)*r,c.cy+2.2+Math.sin(now/1700+phase)*.6,c.cz+Math.sin(a)*r);
+      g.rotation.y=Math.atan2(-Math.cos(a),-Math.sin(a));
+      wl.rotation.x=-f;wr.rotation.x=f;
+    }
+  };
+}
+const eagles=[makeEagle(5.5,1,0,0),makeEagle(7.5,-.7,2.1,.8),makeEagle(4,1.3,4.2,1.6)];
+let eagleFlockOn=false;
+/* troll: wakes once the mountain is 30 blocks high; smashes 10 blocks a minute until the gem (appears at 35 blocks) is collected */
+const troll={awake:false,beaten:false,last:0};
+const trollC=makeClimber({step:3,uphill:1.4,dur:900,pause:2200,lift:.3,scale:2.3,msgMs:12000,
+  msg:'A troll has woken up! He smashes 10 blocks every minute. Build to 35 blocks high to find the gem that sends him away.',
+  when(area,top){
+    if(troll.beaten)return false;
+    if(top>=30&&!troll.awake){troll.awake=true;troll.last=performance.now()}
+    return troll.awake;
+  },
+  build(box){
+    const skin=lam(0x6f8a5b),darkSkin=lam(0x566e47),cloth=lam(0x5a3d24),eye=lam(0xffe14a),tusk=lam(0xf3efe2),wood=lam(0x4a321d);
+    [.17,-.17].forEach(z=>box(.22,.36,.22,0,.18,z,skin));
+    box(.52,.16,.72,0,.4,0,cloth);box(.5,.56,.7,0,.74,0,skin);box(.3,.3,.5,.16,.62,0,darkSkin);
+    box(.34,.3,.38,.06,1.16,0,skin);box(.12,.12,.12,.27,1.12,0,darkSkin);
+    box(.05,.06,.07,.24,1.22,.1,eye);box(.05,.06,.07,.24,1.22,-.1,eye);
+    box(.05,.1,.05,.22,1.04,.12,tusk);box(.05,.1,.05,.22,1.04,-.12,tusk);
+    box(.2,.62,.2,0,.66,.46,skin);box(.2,.62,.2,.06,.66,-.46,skin);
+    box(.14,.8,.14,.2,.6,-.62,wood);box(.22,.3,.22,.2,1,-.62,wood);
+  }});
+climbers.push(trollC);
+const gem=new THREE.Mesh(new THREE.OctahedronGeometry(.8),new THREE.MeshLambertMaterial({color:0xff4fd8,emissive:0x7a1466,flatShading:true}));
+const gemHit=new THREE.Mesh(new THREE.SphereGeometry(2,8,8),new THREE.MeshBasicMaterial({visible:false}));
+gem.add(gemHit);gem.visible=false;gem.userData.y=0;scene.add(gem);
+function resetTroll(beaten){troll.awake=false;troll.beaten=!!beaten;gem.visible=false}
+function collectGem(){
+  resetTroll(true);
+  say('You collected the gem! The troll has gone and your mountain is safe.',8000);
+  checkClimbers();scheduleSave();
+}
+function gemTap(e){
+  if(!gem.visible)return false;
+  const r=canvas.getBoundingClientRect();
+  mouse.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);
+  ray.setFromCamera(mouse,camera);
+  if(!ray.intersectObject(gemHit,false).length)return false;
+  collectGem();return true;
+}
+function trollTick(now){
+  if(gem.visible){gem.rotation.y=now/500;gem.position.y=gem.userData.y+Math.sin(now/600)*.25}
+  if(!troll.awake||now-troll.last<6000)return;
+  troll.last=now;
+  const c=trollC.c;if(!inb(c.x,0,c.z))return;
+  const h=topY(c.x,c.z);
+  if(h<=0){troll.last=now-5000;return}
+  const i=idx(c.x,h-1,c.z);
+  undoStack.push({i:i,prev:world[i]});if(undoStack.length>300)undoStack.shift();
+  world[i]=0;rebuild();
+}
+function checkClimbers(){
+  let peak=-1;
+  for(let i=world.length-1;i>=0;i--)if(world[i]&&!BLOCKS[world[i]].water){peak=i;break}
+  const area=blocksPlaced();
+  const NEXT=[[100,'the mountaineer'],[150,'the bear'],[200,'a goat'],[215,'another goat'],[230,'another goat'],[245,'another goat'],[260,'the ram']];
+  const fs=$('footStat');
+  if(fs){
+    const upNext=NEXT.find(n=>area<n[0]);
+    fs.innerHTML='Blocks laid: <b>'+area+'</b>'+(upNext?' &middot; '+(upNext[0]-area)+' more for '+upNext[1]:' &middot; everything unlocked');
+  }
+  const top=peak>=0?Math.floor(peak/(W*D)):-1;
+  climbers.forEach(c=>c.check(peak,area));
+  {
+    const top=peak>=0?Math.floor(peak/(W*D)):-1,nowOn=top>20;
+    eagles.forEach((e,i)=>e.check(peak,area,i===0&&!eagleFlockOn));
+    eagleFlockOn=nowOn;
+  }
+  if(troll.awake&&!gem.visible&&top>=35){
+    const gy=Math.floor(peak/(W*D))+3.6;
+    gem.userData.y=gy;gem.position.set(peak%W+.5-W/2,gy,Math.floor(peak/W)%D+.5-D/2);gem.visible=true;
+    say('A gem has appeared above your summit! Tap it to send the troll away.',10000);
+  }
+}
+
+/* ---------- camera ---------- */
+const cam={theta:Math.PI/4,phi:1.0,r:68,target:new THREE.Vector3(0,4,0)};
+function updateCam(){
+  cam.phi=Math.max(.01,Math.min(1.55,cam.phi));
+  cam.r=Math.max(6,Math.min(260,cam.r));
+  const s=Math.sin(cam.phi);
+  camera.position.set(cam.target.x+cam.r*s*Math.sin(cam.theta),cam.target.y+cam.r*Math.cos(cam.phi),cam.target.z+cam.r*s*Math.cos(cam.theta));
+  camera.lookAt(cam.target);
+}
+function pan(dx,dy){
+  const k=cam.r*.0016,right=new THREE.Vector3(),up=new THREE.Vector3();
+  camera.matrixWorld.extractBasis(right,up,new THREE.Vector3());
+  cam.target.addScaledVector(right,-dx*k).addScaledVector(up,dy*k);
+  cam.target.y=Math.max(0,Math.min(H,cam.target.y));
+}
+function setView(v){
+  cam.target.set(0,6,0);cam.r=W*1.7;
+  if(v==='3d'){cam.theta=Math.PI/4;cam.phi=1.0}
+  if(v==='top'){cam.theta=0;cam.phi=.01}
+  if(v==='front'){cam.theta=0;cam.phi=1.55}
+  if(v==='side'){cam.theta=Math.PI/2;cam.phi=1.55}
+}
+function resize(){
+  const w=window.innerWidth,h=window.innerHeight;
+  renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix();
+}
+window.addEventListener('resize',resize);resize();
+
+/* ---------- picking and editing ---------- */
+const ray=new THREE.Raycaster(),mouse=new THREE.Vector2();
+function pick(e){
+  const r=canvas.getBoundingClientRect();
+  mouse.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);
+  ray.setFromCamera(mouse,camera);
+  const hits=ray.intersectObjects(pickables,false);
+  if(!hits.length)return null;
+  const h=hits[0];
+  if(h.object===ground){
+    const x=Math.max(0,Math.min(W-1,Math.floor(h.point.x+W/2))),z=Math.max(0,Math.min(D-1,Math.floor(h.point.z+D/2)));
+    return{hit:null,place:[x,0,z]};
+  }
+  const i=lookup[h.object.userData.t][h.instanceId];if(i===undefined)return null;
+  const p=dec(i),n=h.face.normal;
+  return{hit:p,place:[p[0]+Math.round(n.x),p[1]+Math.round(n.y),p[2]+Math.round(n.z)]};
+}
+function targetCell(p){
+  if(!p)return null;
+  if(tool==='build'){const c=p.place;return inb(c[0],c[1],c[2])&&c[2]<=cut&&!world[idx(c[0],c[1],c[2])]?c:null}
+  return p.hit;
+}
+function setBlock(c,t){
+  const i=idx(c[0],c[1],c[2]);if(world[i]===t)return;
+  undoStack.push({i:i,prev:world[i]});if(undoStack.length>300)undoStack.shift();
+  world[i]=t;rebuild();
+}
+function act(e){
+  if(gemTap(e)){return}
+  if(tool==='label'){
+    const p=pick(e);
+    if(!p||!p.hit){say('Tap a block to pin a label to it.');return}
+    const h=p.hit,ex=labels.find(l=>l.x===h[0]&&l.y===h[1]&&l.z===h[2]);
+    openEdit(ex||{isNew:true,x:h[0],y:h[1],z:h[2],text:''});return;
+  }
+  const c=targetCell(pick(e));if(!c)return;
+  if(tool==='build'&&stamp!==null){placeStamp(c,STAMPS[stamp]);hideHint();return}
+  setBlock(c,tool==='dig'?0:sel);
+  hideHint();
+}
+function placeStamp(c,st){
+  const batch=[];
+  st.cells.forEach(q=>{
+    const x=c[0]+q[0],y=c[1]+q[1],z=c[2]+q[2];
+    if(!inb(x,y,z)||z>cut)return;
+    const i=idx(x,y,z);if(world[i])return;
+    batch.push({i:i,prev:0});world[i]=q[3];
   });
-  customers=customers.filter(c=>c.state!=='done');
+  if(batch.length){undoStack.push({batch:batch});rebuild()}
+}
+function undo(){
+  const u=undoStack.pop();if(!u)return;
+  if(u.snap){if(u.W!==W)setupDims(u.W);world=u.snap;if(u.labels){labels=u.labels;renderLabels()}}else if(u.batch)u.batch.forEach(b=>{world[b.i]=b.prev});else world[u.i]=u.prev;
+  rebuild();
 }
 
-// ══════════════════════════════════════
-// DRAWING
-// ══════════════════════════════════════
-function drawScene(){
-  const canvas=document.getElementById('scene-canvas');
-  const ctx=canvas.getContext('2d');
-  ctx.clearRect(0,0,SCENE_W,SCENE_H);
-
-  drawBackground(ctx);
-  drawStand(ctx);
-  customers.forEach(c=>drawCustomer(ctx,c));
-  drawTimeOverlay(ctx);
-}
-
-function drawBackground(ctx){
-  // Sky gradient based on weather
-  const d=G.weather?G.weather.demand:0.8;
-  const skyTop = d>0.7?'#87CEEB': d>0.4?'#B0C4DE':'#708090';
-  const skyBot = d>0.7?'#C5E8F7': d>0.4?'#C8D8E8':'#8FA0A8';
-  const grad=ctx.createLinearGradient(0,0,0,220);
-  grad.addColorStop(0,skyTop); grad.addColorStop(1,skyBot);
-  ctx.fillStyle=grad; ctx.fillRect(0,0,SCENE_W,220);
-
-  // Clouds (if not scorching)
-  if(G.weather && G.weather.demand<1.0){
-    const cloudX=(simTick*0.4)%1100-100;
-    drawCloud(ctx,cloudX,40,1.0);
-    drawCloud(ctx,cloudX+320,70,0.7);
-    if(G.weather.demand<0.5){
-      drawCloud(ctx,cloudX+180,30,1.2);
-      drawCloud(ctx,cloudX+550,55,0.9);
+/* ---------- pointer input ---------- */
+const pts=new Map();let moved=false,start=null,btn=0;
+canvas.addEventListener('contextmenu',e=>e.preventDefault());
+canvas.addEventListener('pointerdown',e=>{
+  try{canvas.setPointerCapture(e.pointerId)}catch(_){}
+  pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+  if(pts.size===1){moved=false;start={x:e.clientX,y:e.clientY};btn=e.button}else moved=true;
+  ghost.visible=false;closeNew();
+});
+canvas.addEventListener('pointermove',e=>{
+  const p=pts.get(e.pointerId);
+  if(!p){
+    if(e.pointerType==='mouse'){
+      const c=targetCell(pick(e));
+      ghost.visible=!!c;if(c)ghost.position.set(c[0]+.5-W/2,c[1]+.5,c[2]+.5-D/2);
     }
-  }
-
-  // Sun or rain
-  if(G.weather && G.weather.demand>=0.7){
-    const sunPulse=1+Math.sin(simTick*0.05)*0.03;
-    ctx.save();
-    ctx.translate(SCENE_W-80,55); ctx.scale(sunPulse,sunPulse);
-    const sunGrad=ctx.createRadialGradient(0,0,5,0,0,38);
-    sunGrad.addColorStop(0,'#FFE066'); sunGrad.addColorStop(1,'#F5A800');
-    ctx.fillStyle=sunGrad;
-    ctx.beginPath(); ctx.arc(0,0,34,0,Math.PI*2); ctx.fill();
-    // Rays
-    ctx.strokeStyle='#F5C800'; ctx.lineWidth=3;
-    for(let r=0;r<8;r++){
-      const a=(r/8)*Math.PI*2+(simTick*0.01);
-      ctx.beginPath(); ctx.moveTo(Math.cos(a)*40,Math.sin(a)*40);
-      ctx.lineTo(Math.cos(a)*52,Math.sin(a)*52); ctx.stroke();
-    }
-    ctx.restore();
-  }
-
-  // Rain drops
-  if(G.weather && G.weather.demand<=0.2){
-    ctx.strokeStyle='rgba(100,140,200,0.5)'; ctx.lineWidth=1.5;
-    for(let r=0;r<30;r++){
-      const rx=((r*137+simTick*4)%SCENE_W);
-      const ry=((r*83+simTick*6)%200);
-      ctx.beginPath(); ctx.moveTo(rx,ry); ctx.lineTo(rx-3,ry+12); ctx.stroke();
-    }
-  }
-
-  // Ground / road
-  ctx.fillStyle='#7CB87C'; ctx.fillRect(0,220,SCENE_W,SCENE_H-220); // grass
-  ctx.fillStyle='#C8B89A'; ctx.fillRect(0,235,SCENE_W,60); // footpath
-  // Path dashes
-  ctx.fillStyle='rgba(255,255,255,0.3)';
-  for(let x=0;x<SCENE_W;x+=80){
-    ctx.fillRect((x+(simTick*1.2))%SCENE_W,261,40,4);
-  }
-  // Pavement edge
-  ctx.fillStyle='#A89880'; ctx.fillRect(0,235,SCENE_W,3);
-}
-
-function drawCloud(ctx,x,y,scale){
-  ctx.save(); ctx.translate(x,y); ctx.scale(scale,scale);
-  ctx.fillStyle='rgba(255,255,255,0.85)';
-  const blobs=[{x:0,y:0,r:22},{x:28,y:-8,r:28},{x:58,y:-2,r:20},{x:82,y:4,r:16}];
-  blobs.forEach(b=>{ ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,Math.PI*2); ctx.fill(); });
-  ctx.restore();
-}
-
-function drawStand(ctx){
-  // Stand body
-  ctx.fillStyle='#8B4513';
-  ctx.fillRect(STAND_X,SCENE_H-160,140,90);
-
-  // Counter top
-  ctx.fillStyle='#DEB887';
-  ctx.fillRect(STAND_X-5,SCENE_H-168,150,12);
-
-  // Striped awning
-  const awningY=SCENE_H-215;
-  const stripes=['#E53935','#FFFFFF'];
-  for(let s=0;s<10;s++){
-    ctx.fillStyle=stripes[s%2];
-    ctx.beginPath();
-    ctx.moveTo(STAND_X-5+s*15,awningY+30);
-    ctx.lineTo(STAND_X-5+(s+1)*15,awningY+30);
-    ctx.lineTo(STAND_X-5+(s+1)*15,awningY);
-    ctx.lineTo(STAND_X-5+s*15,awningY);
-    ctx.closePath(); ctx.fill();
-  }
-  // Awning outline
-  ctx.strokeStyle='#C62828'; ctx.lineWidth=2;
-  ctx.strokeRect(STAND_X-5,awningY,150,30);
-  // Awning fringe
-  for(let f=0;f<10;f++){
-    ctx.beginPath();
-    ctx.moveTo(STAND_X-5+f*15,awningY+30);
-    ctx.lineTo(STAND_X+f*15,awningY+38);
-    ctx.strokeStyle='#E53935'; ctx.lineWidth=2; ctx.stroke();
-  }
-
-  // Sign
-  ctx.fillStyle='#F5C800';
-  ctx.fillRect(STAND_X+10,SCENE_H-245,120,28);
-  ctx.strokeStyle='#D4A800'; ctx.lineWidth=2;
-  ctx.strokeRect(STAND_X+10,SCENE_H-245,120,28);
-  ctx.fillStyle='#1A2E4A'; ctx.font='bold 13px Segoe UI,Arial';
-  ctx.textAlign='center'; ctx.fillText('🍋 LEMONADE €'+G.price.toFixed(2),STAND_X+70,SCENE_H-226);
-
-  // Pitcher on counter
-  ctx.fillStyle='#B3E5FC';
-  ctx.fillRect(STAND_X+60,SCENE_H-175,28,22);
-  ctx.fillStyle='#81D4FA';
-  const liq=Math.max(0,G.stock.cups/G.stockMax.cups);
-  ctx.fillRect(STAND_X+61,SCENE_H-175+(22*(1-liq)),26,22*liq);
-  ctx.strokeStyle='#0288D1'; ctx.lineWidth=1.5;
-  ctx.strokeRect(STAND_X+60,SCENE_H-175,28,22);
-
-  // Lemons decoration
-  ctx.fillStyle='#F5C800';
-  for(let j=0;j<Math.min(3,Math.ceil(G.stock.lemons/5));j++){
-    ctx.beginPath(); ctx.ellipse(STAND_X+20+j*18,SCENE_H-162,7,5,0,0,Math.PI*2); ctx.fill();
-    ctx.strokeStyle='#D4A800'; ctx.lineWidth=1; ctx.stroke();
-  }
-
-  // Seller person
-  const bob=Math.sin(simTick*0.1)*2;
-  // Body
-  ctx.fillStyle='#1A2E4A';
-  ctx.fillRect(STAND_X+10,SCENE_H-215+bob,30,40);
-  // Head
-  ctx.fillStyle='#FFCCBC';
-  ctx.beginPath(); ctx.arc(STAND_X+25,SCENE_H-222+bob,14,0,Math.PI*2); ctx.fill();
-  // Hat
-  ctx.fillStyle='#E53935';
-  ctx.fillRect(STAND_X+12,SCENE_H-238+bob,26,10);
-  ctx.fillRect(STAND_X+10,SCENE_H-230+bob,30,4);
-}
-
-function drawCustomer(ctx,c){
-  if(c.state==='done') return;
-  const bounce=c.state==='walking'?Math.sin(simTick*0.3)*3:0;
-  const y=c.y+bounce;
-
-  // Shadow
-  ctx.fillStyle='rgba(0,0,0,0.1)';
-  ctx.beginPath(); ctx.ellipse(c.x,y+30,12,4,0,0,Math.PI*2); ctx.fill();
-
-  // Body
-  ctx.fillStyle=c.colour;
-  ctx.fillRect(c.x-8,y,16,24);
-
-  // Head
-  ctx.fillStyle='#FFCCBC';
-  ctx.beginPath(); ctx.arc(c.x,y-7,9,0,Math.PI*2); ctx.fill();
-
-  // Cup if just bought
-  if(c.state==='leaving' && c.leaveDir===-1){
-    ctx.fillStyle='#B3E5FC';
-    ctx.fillRect(c.x+8,y+2,8,12);
-    ctx.strokeStyle='#0288D1'; ctx.lineWidth=1;
-    ctx.strokeRect(c.x+8,y+2,8,12);
-  }
-
-  // Speech bubble
-  if(c.bubbleTimer>0 && c.bubble){
-    const alpha=Math.min(1,c.bubbleTimer/10);
-    ctx.save(); ctx.globalAlpha=alpha;
-    ctx.fillStyle='white';
-    ctx.beginPath(); ctx.roundRect(c.x-16,y-38,32,22,6); ctx.fill();
-    ctx.strokeStyle='#ccc'; ctx.lineWidth=1; ctx.stroke();
-    ctx.font='14px serif'; ctx.textAlign='center';
-    ctx.fillText(c.bubble,c.x,y-21);
-    ctx.restore();
-  }
-}
-
-function drawTimeOverlay(ctx){
-  // Time of day progress
-  const progress=simTick/TOTAL_TICKS;
-  const tLabel=TIME_LABELS[Math.min(5,Math.floor(progress*6))];
-  document.getElementById('hud-time').textContent=tLabel;
-
-  // Progress bar at top of scene
-  ctx.fillStyle='rgba(0,0,0,0.3)';
-  ctx.fillRect(0,0,SCENE_W,20);
-  ctx.fillStyle='rgba(245,200,0,0.85)';
-  ctx.fillRect(0,0,SCENE_W*progress,20);
-  ctx.fillStyle='white'; ctx.font='bold 11px Segoe UI,Arial';
-  ctx.textAlign='left';
-  ctx.fillText('⏰ '+tLabel,8,14);
-  ctx.textAlign='right';
-  ctx.fillText(G.weather.emoji+' '+G.weather.label,SCENE_W-8,14);
-}
-
-function updateStockBars(){
-  ['cups','lemons','sugar','ice'].forEach(k=>{
-    const pct=Math.max(0,(G.stock[k]/G.stockMax[k])*100);
-    document.getElementById('sb-'+k).textContent=G.stock[k];
-    document.getElementById('sf-'+k).style.width=pct+'%';
-  });
-}
-
-function drawProfitMini(){
-  const canvas=document.getElementById('profit-chart');
-  if(!canvas) return;
-  const ctx2=canvas.getContext('2d');
-  canvas.width=canvas.offsetWidth*2; canvas.height=100;
-  ctx2.clearRect(0,0,canvas.width,canvas.height);
-  const hist=G.profitHistory;
-  if(hist.length<2) return;
-  const W=canvas.width,H=canvas.height,pad=4;
-  const maxV=Math.max(0.5,Math.max(...hist)*1.15);
-  const minV=Math.min(-0.1,Math.min(...hist)*1.15);
-  const range=maxV-minV;
-  const sx=i=>pad+(i/(hist.length-1))*(W-pad*2);
-  const sy=v=>H-pad-((v-minV)/range)*(H-pad*2);
-  const zeroY=sy(0);
-  // Zero line
-  ctx2.beginPath(); ctx2.moveTo(pad,zeroY); ctx2.lineTo(W-pad,zeroY);
-  ctx2.strokeStyle='rgba(255,255,255,.3)'; ctx2.lineWidth=1.5;
-  ctx2.setLineDash([3,3]); ctx2.stroke(); ctx2.setLineDash([]);
-  ctx2.fillStyle='rgba(255,255,255,.25)'; ctx2.font='bold 10px Nunito,Arial'; ctx2.textAlign='left';
-  ctx2.fillText('0',pad+2,zeroY-3);
-  // Fill
-  const last=hist.length-1;
-  const inDebt=hist[last]<0;
-  ctx2.beginPath(); ctx2.moveTo(sx(0),zeroY);
-  hist.forEach((v,i)=>ctx2.lineTo(sx(i),sy(v)));
-  ctx2.lineTo(sx(last),zeroY); ctx2.closePath();
-  ctx2.fillStyle=inDebt?'rgba(239,83,80,.25)':'rgba(76,175,80,.25)'; ctx2.fill();
-  ctx2.beginPath();
-  hist.forEach((v,i)=>i===0?ctx2.moveTo(sx(i),sy(v)):ctx2.lineTo(sx(i),sy(v)));
-  ctx2.strokeStyle=inDebt?'#EF5350':'#4CAF50'; ctx2.lineWidth=2.5; ctx2.lineJoin='round'; ctx2.stroke();
-  ctx2.beginPath(); ctx2.arc(sx(last),sy(hist[last]),4,0,Math.PI*2);
-  ctx2.fillStyle=inDebt?'#EF5350':'#4CAF50'; ctx2.fill();
-}
-
-function updateHUD(){
-  const profit=G.simRevenue-G.simCost;
-  document.getElementById('hud-sold').textContent=G.simSold;
-  document.getElementById('hud-revenue').textContent='€'+fmt(G.simRevenue);
-  document.getElementById('hud-profit').textContent=(profit>=0?'+':'-')+'€'+fmt(Math.abs(profit));
-  document.getElementById('hud-profit').style.color=profit>=0?'#81C784':'#EF5350';
-  // Satisfaction bar
-  const tot=G.satHappy+G.satPrice+G.satTaste+G.satSoldout;
-  const pct=tot>0?Math.round(G.satHappy/tot*100):100;
-  const sb=document.getElementById('sat-bar');
-  if(sb){ sb.style.width=pct+'%'; sb.style.background=pct>=70?'#4CAF50':pct>=40?'#FFB74D':'#EF5350'; }
-  const sp=document.getElementById('sat-pct'); if(sp) sp.textContent=pct+'%';
-  const spr=document.getElementById('sat-price'); if(spr) spr.textContent=G.satPrice;
-  const str=document.getElementById('sat-taste'); if(str) str.textContent=G.satTaste;
-  const ssr=document.getElementById('sat-so'); if(ssr) ssr.textContent=G.satSoldout;
-  // Profit mini chart
-  if(simTick%6===0){ G.profitHistory.push(profit); if(G.profitHistory.length>80) G.profitHistory.shift(); }
-  drawProfitMini();
-
-  // Ticker
-  const tickPct=simTick/TOTAL_TICKS;
-  let icon='☀️', text='';
-  if(tickPct<0.05){ icon='🛒'; text='Setting up the stand...'; }
-  else if(G.customersSeen===0&&tickPct>0.1){ icon='👀'; text='Waiting for the first customer...'; }
-  else if(G.stock.cups===0&&G.simSold>0){ icon='😅'; text='Sold out! Could have made more cups.'; }
-  else if(G.simSold===G.canMake&&G.canMake>0){ icon='🎉'; text='Sold out completely!'; }
-  else if(G.totalWillBuy===0){ icon='😞'; text="Nobody's buying today... price or weather?"; }
-  else { icon='🍋'; text=`${G.simSold} cups sold so far - keep it going!`; }
-  document.getElementById('ticker-icon').textContent=icon;
-  document.getElementById('ticker-text').textContent=text;
-}
-
-function endSim(){
-  if(simAnim){ cancelAnimationFrame(simAnim); simAnim=null; }
-  G.simRunning=false;
-  G.balance=Math.max(0,G.balance+G.simRevenue);
-  G.balanceHistory.push(G.balance);
-  document.getElementById('h-balance').textContent=fmt(G.balance);
-  document.getElementById('chart-balance').textContent=fmt(G.balance);
-
-  const profit=G.simRevenue-G.simCost;
-  const panel=document.getElementById('sim-result');
-  panel.style.display='flex';
-  document.getElementById('next-day-num').textContent=G.day+1;
-  document.getElementById('result-title-txt').textContent=
-    profit>=0 ? `✅ Day ${G.day}: Profit of €${fmt(profit)}` : `❌ Day ${G.day}: Loss of €${fmt(Math.abs(profit))}`;
-  document.getElementById('result-title-txt').style.color=profit>=0?'var(--lime-dark)':'var(--red)';
-  document.getElementById('r-sold').textContent=G.simSold;
-  document.getElementById('r-revenue').textContent='€'+fmt(G.simRevenue);
-  document.getElementById('r-profit').textContent=(profit>=0?'+':'')+' €'+fmt(profit);
-  document.getElementById('r-profit').style.color=profit>=0?'var(--lime-dark)':'var(--red)';
-
-  let msg='';
-  if(G.canMake<+document.getElementById('cups').value) msg+='You ran out of ingredients before making all your cups. ';
-  if(G.simSold<G.canMake&&G.canMake>0) msg+=`${G.canMake-G.simSold} cups unsold. `;
-  if(G.rqScore<0.5) msg+='Customers were put off by the recipe balance. ';
-  if(G.price>1.0&&G.simSold<5) msg+='The high price put people off. ';
-  if(G.simSold===G.canMake&&G.totalCustomers>G.canMake) msg+='You could have sold even more - make more cups next time!';
-  document.getElementById('result-msg').textContent=msg;
-
-  G._lastResult={sold:G.simSold,revenue:G.simRevenue,profit,cost:G.simCost,price:G.price};
-
-  // Final scene - freeze
-  drawScene();
-}
-
-// ══════════════════════════════════════
-// NEXT DAY
-// ══════════════════════════════════════
-function nextDay(){
-  try {
-    document.getElementById('sim-result').style.display='none';
-  } catch(e){}
-
-  try {
-    const profit = G.simRevenue - G.simCost;
-    const entry = {
-      day: G.day,
-      weather: G.weather ? G.weather.label : '?',
-      price: G.price || 0,
-      sold: G.simSold || 0,
-      profit: profit,
-      reason: '(no reflection entered)',
-      balance: G.balance
-    };
-    G.log.push(entry);
-    addLogEntry(entry);
-    G._yesterday = { day:G.day, profit:profit, balance:G.balance };
-  } catch(e){}
-
-  G.day++;
-  if(G.day>30){ showGameOver(); return; }
-  initDay();
-  window.scrollTo({top:0, behavior:'smooth'});
-}
-
-function addLogEntry(entry){
-  const wrap=document.getElementById('log-wrap');
-  const empty=wrap.querySelector('.log-empty');
-  if(empty) empty.remove();
-  const div=document.createElement('div');
-  div.className='log-entry';
-  div.innerHTML=`<div class="log-day">Day ${entry.day} - ${entry.weather} - €${fmt(entry.price)}/cup - ${entry.sold} sold - ${entry.profit>=0?'+':''}€${fmt(entry.profit)}</div><div class="log-reason">${entry.reason}</div>`;
-  wrap.prepend(div);
-}
-
-// ══════════════════════════════════════
-// CHART
-// ══════════════════════════════════════
-function drawChart(){
-  const canvas=document.getElementById('chart-canvas');
-  const ctx=canvas.getContext('2d');
-  canvas.width=canvas.offsetWidth*2; canvas.height=160;
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  const hist=G.balanceHistory;
-  if(hist.length<2) return;
-  const W=canvas.width,H=canvas.height,pad={t:10,r:10,b:10,l:10};
-  const minV=Math.min(...hist)*0.9, maxV=Math.max(...hist)*1.1;
-  const sx=i=>pad.l+(i/(hist.length-1))*(W-pad.l-pad.r);
-  const sy=v=>H-pad.b-((v-minV)/(maxV-minV))*(H-pad.t-pad.b);
-  ctx.beginPath(); ctx.moveTo(sx(0),H-pad.b);
-  hist.forEach((v,i)=>ctx.lineTo(sx(i),sy(v)));
-  ctx.lineTo(sx(hist.length-1),H-pad.b); ctx.closePath();
-  ctx.fillStyle='rgba(76,175,80,0.15)'; ctx.fill();
-  ctx.beginPath();
-  hist.forEach((v,i)=>i===0?ctx.moveTo(sx(i),sy(v)):ctx.lineTo(sx(i),sy(v)));
-  ctx.strokeStyle='#4CAF50'; ctx.lineWidth=3; ctx.lineJoin='round'; ctx.stroke();
-  const last=hist.length-1;
-  ctx.beginPath(); ctx.arc(sx(last),sy(hist[last]),5,0,Math.PI*2);
-  ctx.fillStyle='#4CAF50'; ctx.fill();
-}
-
-// ══════════════════════════════════════
-// GAME OVER
-// ══════════════════════════════════════
-function showGameOver(){
-  showScreen('over-screen');
-  document.getElementById('final-score').textContent='€'+fmt(G.balance);
-  const finalLog=document.getElementById('final-log');
-  finalLog.innerHTML='';
-  [...G.log].reverse().forEach(e=>{
-    const div=document.createElement('div');
-    div.className='final-log-entry';
-    div.innerHTML=`<strong>Day ${e.day}</strong> - ${e.weather} - €${fmt(e.price)}/cup - ${e.sold} sold - ${e.profit>=0?'+':''}€${fmt(e.profit)} - Balance: €${fmt(e.balance)}<br><em style="color:#546E7A">${e.reason}</em>`;
-    finalLog.appendChild(div);
-  });
-}
-
-function restartGame(){
-  if(simAnim){ cancelAnimationFrame(simAnim); simAnim=null; }
-  customers=[];
-  initGame();
-  document.getElementById('log-wrap').innerHTML='<div class="log-empty">Your decisions will appear here.</div>';
-  initDay();
-}
-
-// ══════════════════════════════════════
-// BOOT
-// ══════════════════════════════════════
-initGame();
-// showScreen handled by title screen - it starts active
-
-const INSTR_CARDS = [{"icon": "🍋", "title": "Welcome to Mr Andy's Lemonade Stand!", "body": "You are going to run your own lemonade stand for 30 days. By the end, you will have developed some really important skills:", "bullets": ["🧠  Computational thinking - testing ideas, spotting patterns and solving problems", "💰  Financial literacy - understanding profit, costs and how businesses actually work", "🔢  Maths in action - multiplication, ratios and reading data charts", "🤔  Critical thinking - making decisions, changing one thing at a time and learning from the results"], "tip": "💡 There is no single right answer. The best players are the ones who think, test and adapt!"}, {"icon": "📦", "title": "Buy Stock Each Morning", "body": "Choose how many cups, lemons, sugar and ice to buy. Each ingredient costs money - think carefully about how much you need for the day.", "tip": "💡 Buy too little and you sell out early. Buy too much and leftovers are wasted."}, {"icon": "🧪", "title": "Set Your Recipe", "body": "Use the sliders to set how many lemons, spoons of sugar and ice cubes go into each cup. A balanced recipe keeps customers happy. The game will warn you if your stock does not match your recipe.", "tip": "💡 2 lemons, 2 sugar, 2 ice per cup is a solid starting balance."}, {"icon": "💲", "title": "Set Your Selling Price", "body": "Charge too much and customers walk away. Charge too little and you lose money. The hint below the price box guides you based on the day.", "tip": "💡 On hot days you can charge more. On rainy days, keep it low to attract anyone."}, {"icon": "☀️", "title": "Weather Drives Demand", "body": "Every day has different weather. Scorching hot days bring lots of customers. Rainy days bring almost none. Check the weather strip every morning before deciding how much to buy.", "tip": "💡 Demand is shown as a bar - the longer it is, the more customers you can expect."}, {"icon": "🥷", "title": "Watch Out for the Thief!", "body": "Very rarely - maybe once across several playthroughs - a hooded figure will appear during the simulation and steal half your revenue. Keep an eye on the street!", "tip": "💡 The thief is rare but real. Most days are safe. Some are not."}];
-let instrStep = 0;
-
-function startInstructions(){
-  instrStep = 0;
-  renderInstrCard();
-  showScreen('instr-screen');
-}
-
-function skipInstructions(){
-  showScreen('plan-screen');
-  initDay();
-}
-
-function instrNav(dir){
-  instrStep += dir;
-  if(instrStep < 0) instrStep = 0;
-  if(instrStep >= INSTR_CARDS.length){
-    skipInstructions();
     return;
   }
-  renderInstrCard();
-}
-
-function renderInstrCard(){
-  const card = INSTR_CARDS[instrStep];
-  document.getElementById('instr-icon').textContent = card.icon;
-  document.getElementById('instr-title').textContent = card.title;
-  // Body + optional bullets
-  const bodyEl = document.getElementById('instr-body');
-  if(card.bullets && card.bullets.length){
-    bodyEl.innerHTML = '<p style="margin-bottom:10px;">' + card.body + '</p>' +
-      '<ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px;">' +
-      card.bullets.map(b =>
-        '<li style="display:flex;gap:10px;align-items:flex-start;background:#f0f4f8;border-radius:8px;padding:8px 10px;font-size:.82rem;color:#1A2E4A;font-weight:700;">' +
-        '<span style="flex-shrink:0;">' + b.substring(0,2) + '</span>' +
-        '<span>' + b.substring(2).trim() + '</span></li>'
-      ).join('') + '</ul>';
-  } else {
-    bodyEl.textContent = card.body;
+  const dx=e.clientX-p.x,dy=e.clientY-p.y;
+  if(pts.size===1){
+    if(!moved&&Math.hypot(e.clientX-start.x,e.clientY-start.y)>7)moved=true;
+    if(moved){
+      if(btn===2||e.shiftKey)pan(dx,dy);
+      else{cam.theta-=dx*.008;cam.phi-=dy*.008}
+    }
+  }else if(pts.size===2){
+    let o=null;pts.forEach((v,k)=>{if(k!==e.pointerId)o=v});
+    const d0=Math.hypot(p.x-o.x,p.y-o.y),d1=Math.hypot(e.clientX-o.x,e.clientY-o.y);
+    if(d0>0&&d1>0)cam.r*=d0/d1;
+    pan(dx/2,dy/2);
   }
-  document.getElementById('instr-tip').textContent = card.tip;
-  // Dots
-  const dots = document.getElementById('instr-dots');
-  dots.innerHTML = INSTR_CARDS.map((_,i) =>
-    `<div style="width:8px;height:8px;border-radius:50%;background:${i===instrStep?'var(--yellow)':'rgba(255,255,255,.3)'}"></div>`
-  ).join('');
-  // Back button visibility
-  document.getElementById('instr-back').style.opacity = instrStep===0?'0.3':'1';
-  document.getElementById('instr-back').style.pointerEvents = instrStep===0?'none':'auto';
-  // Next button label
-  document.getElementById('instr-next').textContent = instrStep===INSTR_CARDS.length-1?'Play! 🍋':'Next →';
+  p.x=e.clientX;p.y=e.clientY;
+});
+function up(e){
+  if(!pts.has(e.pointerId))return;
+  if(e.type==='pointerup'&&pts.size===1&&!moved&&btn===0)act(e);
+  pts.delete(e.pointerId);
 }
+canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);
+canvas.addEventListener('wheel',e=>{e.preventDefault();cam.r*=Math.exp(e.deltaY*.001)},{passive:false});
+
+/* ---------- UI ---------- */
+const $=id=>document.getElementById(id);
+
+/* labels */
+let labels=[],editing=null;
+const labLayer=$('labels'),labelEdit=$('labelEdit'),labelText=$('labelText'),V=new THREE.Vector3();
+function cloneLabels(){return labels.map(l=>({x:l.x,y:l.y,z:l.z,text:l.text}))}
+function renderLabels(){
+  labLayer.innerHTML='';
+  labels.forEach(l=>{
+    const d=document.createElement('div');d.className='lab';d.textContent=l.text;
+    d.addEventListener('click',()=>openEdit(l));l.el=d;labLayer.appendChild(d);
+  });
+  scheduleSave();
+}
+function placeLabels(){
+  const w=window.innerWidth,h=window.innerHeight;
+  labels.forEach(l=>{
+    if(!l.el)return;
+    V.set(l.x+.5-W/2,l.y+1,l.z+.5-D/2).project(camera);
+    l.vis=V.z<1&&l.z<=cut;
+    l.el.style.display=l.vis?'':'none';
+    if(l.vis){l.sx=(V.x+1)/2*w;l.sy=(1-V.y)/2*h;l.el.style.left=l.sx+'px';l.el.style.top=l.sy+'px'}
+  });
+}
+function openEdit(l){
+  newMenu.classList.remove('open');sizeMenu.classList.remove('open');
+  editing=l;labelText.value=l.text||'';
+  $('labelDelete').style.display=l.isNew?'none':'';
+  labelEdit.classList.add('open');labelText.focus();
+}
+function saveLabel(){
+  const t=labelText.value.trim().slice(0,40);
+  if(editing&&t){
+    if(editing.isNew){
+      if(labels.length>=40){say('40 labels is the limit. Delete one first.');closeNew();return}
+      labels.push({x:editing.x,y:editing.y,z:editing.z,text:t});
+    }else editing.text=t;
+    renderLabels();
+  }
+  closeNew();
+}
+$('labelSave').addEventListener('click',saveLabel);
+labelText.addEventListener('keydown',e=>{if(e.key==='Enter')saveLabel()});
+$('labelCancel').addEventListener('click',()=>closeNew());
+$('labelDelete').addEventListener('click',()=>{labels=labels.filter(l=>l!==editing);renderLabels();closeNew()});
+const pal=$('palette');
+for(let t=1;t<NB;t++){
+  const b=document.createElement('button');b.className='blk';b.dataset.t=t;
+  b.setAttribute('aria-pressed',t===sel);
+  b.innerHTML='<img alt="" src="'+swatch[t]+'">'+BLOCKS[t].name+'<small>'+BLOCKS[t].group+'</small>';
+  b.dataset.tip=BLOCKS[t].name+'|'+TIPS[BLOCKS[t].name];
+  b.addEventListener('click',()=>{sel=t;stamp=null;if(tool==='dig'||tool==='label')setTool('build');
+    pal.querySelectorAll('.blk').forEach(x=>x.setAttribute('aria-pressed',x===b))});
+  pal.appendChild(b);
+}
+STAMPS.forEach((st,n)=>{
+  const b=document.createElement('button');b.className='blk';b.setAttribute('aria-pressed',false);
+  b.innerHTML='<img alt="" src="'+stampIcon(st.icon)+'">'+st.name+'<small>'+st.group+'</small>';
+  b.dataset.tip=st.name+'|'+TIPS[st.name];
+  b.addEventListener('click',()=>{stamp=n;setTool('build');
+    pal.querySelectorAll('.blk').forEach(x=>x.setAttribute('aria-pressed',x===b))});
+  pal.appendChild(b);
+});
+const toolBtns={build:$('tBuild'),dig:$('tDig'),paint:$('tPaint'),label:$('tLabel')};
+function setTool(t){tool=t;for(const k in toolBtns)toolBtns[k].setAttribute('aria-pressed',k===t)}
+for(const k in toolBtns)toolBtns[k].addEventListener('click',()=>setTool(k));
+$('undo').addEventListener('click',undo);
+document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
+$('zin').addEventListener('click',()=>cam.r*=.8);
+$('zout').addEventListener('click',()=>cam.r*=1.25);
+$('cut').addEventListener('input',e=>{cut=+e.target.value;rebuild()});
+const newMenu=$('newMenu');
+const sizeMenu=$('sizeMenu');
+function closeNew(){newMenu.classList.remove('open');sizeMenu.classList.remove('open');labelEdit.classList.remove('open');labelText.blur();mapOpen=false;mapOverlay.classList.remove('open')}
+$('newBtn').addEventListener('click',()=>{sizeMenu.classList.remove('open');newMenu.classList.toggle('open')});
+$('sizeBtn').addEventListener('click',()=>{newMenu.classList.remove('open');sizeMenu.classList.toggle('open')});
+sizeMenu.querySelectorAll('[data-size]').forEach(b=>b.addEventListener('click',()=>{resizeLand(+b.dataset.size);closeNew()}));
+newMenu.querySelectorAll('[data-start]').forEach(b=>b.addEventListener('click',()=>{starter(b.dataset.start,true);closeNew()}));
+const hint=$('hint');function hideHint(){hint.classList.add('gone')}
+let sayTimer=0;
+function say(t,ms){hint.textContent=t;hint.classList.remove('gone');clearTimeout(sayTimer);sayTimer=setTimeout(hideHint,ms||5000)}
+setTimeout(hideHint,9000);
+window.addEventListener('keydown',e=>{
+  if(e.target&&e.target.tagName==='INPUT')return;
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();undo();return}
+  const k=e.key.toLowerCase();
+  if(k==='b')setTool('build');if(k==='d')setTool('dig');if(k==='s')setTool('paint');
+});
+
+/* ---------- instruction screens ---------- */
+const STEPS=[
+ {t:'Build a mountain range',p:'Use the tools to create your own mountain range. Start with the rock layers, then build upwards using different rocks, soil, grass, snow and water.'},
+ {t:'Label your mountains',p:'Use what you know about mountains. Choose the Label tool and pin a name to each key feature of your model.',w:['peak','summit','ridge','valley','trough','slope']},
+ {t:'Show how you made it',p:'Take screenshots as you build, not only at the end. Add them to a Canva design, then share it with your teacher.'},
+ {t:'Find out what each tool does',p:'Hold your finger on any tool or block for a moment. A short explanation will pop up.'}
+];
+let step=0;const intro=$('intro');
+function showStep(){
+  const s=STEPS[step];
+  $('introNum').textContent='Step '+(step+1)+' of '+STEPS.length;
+  $('introTitle').textContent=s.t;$('introText').textContent=s.p;
+  const w=$('introWords');w.textContent='';
+  (s.w||[]).forEach(x=>{const e=document.createElement('span');e.textContent=x;w.appendChild(e)});
+  $('introBack').style.visibility=step?'visible':'hidden';
+  $('introSkip').style.display=step===STEPS.length-1?'none':'';
+  $('introNext').textContent=step===STEPS.length-1?'Start building':'Next';
+}
+function openIntro(){step=0;showStep();intro.classList.add('open');hideHint()}
+$('introNext').addEventListener('click',()=>{if(step<STEPS.length-1){step++;showStep()}else{intro.classList.remove('open');if(needsSetup){needsSetup=false;openSetup()}}});
+$('introBack').addEventListener('click',()=>{if(step>0){step--;showStep()}});
+$('introSkip').addEventListener('click',()=>intro.classList.remove('open'));
+$('helpBtn').addEventListener('click',()=>{closeNew();openIntro()});
+
+/* first-run setup: size, then starting land (skipped if a saved model was found) */
+const setupEl=$('setup');let pendingSize=40;
+function openSetup(){$('setupCard1').classList.add('show');$('setupCard2').classList.remove('show');setupEl.classList.add('open')}
+setupEl.querySelectorAll('[data-size]').forEach(b=>b.addEventListener('click',()=>{
+  pendingSize=+b.dataset.size;$('setupCard1').classList.remove('show');$('setupCard2').classList.add('show');
+}));
+$('setupBack').addEventListener('click',()=>{$('setupCard2').classList.remove('show');$('setupCard1').classList.add('show')});
+setupEl.querySelectorAll('[data-start2]').forEach(b=>b.addEventListener('click',()=>{
+  if(W!==pendingSize)setupDims(pendingSize);
+  starter(b.dataset.start2,false);setupEl.classList.remove('open');
+}));
+$('setupExample').addEventListener('click',()=>{starter('example',false);setupEl.classList.remove('open')});
+let needsSetup=false;
+openIntro();
+
+/* ---------- hold-down help ---------- */
+const tipEl=$('tip');let tipTimer=0,tipHide=0,tipShown=false,tipStart=null;
+function hideTip(){tipEl.style.display='none'}
+function showTip(el){
+  clearTimeout(tipHide);
+  const p=el.dataset.tip.split('|');
+  tipEl.textContent='';const b=document.createElement('b');b.textContent=p[0];tipEl.appendChild(b);
+  tipEl.appendChild(document.createTextNode(p[1]||''));
+  tipEl.style.display='block';
+  const r=el.getBoundingClientRect(),w=tipEl.offsetWidth,h=tipEl.offsetHeight;
+  tipEl.style.left=Math.max(8,Math.min(window.innerWidth-w-8,r.left+r.width/2-w/2))+'px';
+  tipEl.style.top=(r.top<window.innerHeight/2?r.bottom+10:r.top-h-10)+'px';
+}
+const tipTarget=e=>e.target&&e.target.closest?e.target.closest('[data-tip]'):null;
+document.addEventListener('pointerdown',e=>{
+  tipShown=false;clearTimeout(tipTimer);hideTip();
+  const el=tipTarget(e);if(!el)return;
+  tipStart={x:e.clientX,y:e.clientY};
+  tipTimer=setTimeout(()=>{tipShown=true;showTip(el)},450);
+},true);
+document.addEventListener('pointermove',e=>{
+  if(tipStart&&!tipShown&&Math.hypot(e.clientX-tipStart.x,e.clientY-tipStart.y)>10)clearTimeout(tipTimer);
+},true);
+function tipEnd(){clearTimeout(tipTimer);tipStart=null;if(tipShown){clearTimeout(tipHide);tipHide=setTimeout(hideTip,3000)}}
+document.addEventListener('pointerup',tipEnd,true);document.addEventListener('pointercancel',tipEnd,true);
+document.addEventListener('click',e=>{if(tipShown){e.stopPropagation();e.preventDefault();tipShown=false}},true);
+document.addEventListener('contextmenu',e=>{if(tipTarget(e))e.preventDefault()});
+document.addEventListener('pointerover',e=>{
+  if(e.pointerType!=='mouse')return;const el=tipTarget(e);if(!el)return;
+  clearTimeout(tipTimer);tipTimer=setTimeout(()=>showTip(el),600);
+});
+document.addEventListener('pointerout',e=>{if(e.pointerType==='mouse'&&tipTarget(e)){clearTimeout(tipTimer);hideTip()}});
+
+/* ---------- topography map ---------- */
+let mapOpen=false;
+function elevColor(h){
+  const t=Math.max(0,Math.min(1,h/Math.max(1,H-1)));
+  const stops=[[0,[61,122,58]],[.3,[150,163,84]],[.55,[176,156,92]],[.75,[120,108,104]],[1,[250,250,252]]];
+  for(let i=0;i<stops.length-1;i++){
+    const a=stops[i],b=stops[i+1];
+    if(t<=b[0]){const k=(t-a[0])/((b[0]-a[0])||1),ac=a[1],bc=b[1];
+      return 'rgb('+ac.map((v,n)=>Math.round(v+(bc[n]-v)*k)).join(',')+')';}
+  }
+  return 'rgb(250,250,252)';
+}
+function drawMap(){
+  const cv=$('mapCanvas'),ctx=cv.getContext('2d');
+  const avail=Math.min(window.innerWidth,window.innerHeight)-150;
+  const size=Math.max(240,Math.min(640,avail));
+  cv.width=size;cv.height=size;const cell=size/W;
+  for(let z=0;z<D;z++)for(let x=0;x<W;x++){
+    let water=false,h=0;
+    for(let y=H-1;y>=0;y--){const t=world[idx(x,y,z)];if(t){water=BLOCKS[t].water;h=y+1;break}}
+    ctx.fillStyle=water?'#2f6fae':elevColor(h);
+    ctx.fillRect(x*cell,z*cell,cell+.6,cell+.6);
+  }
+  ctx.strokeStyle='rgba(43,58,46,.55)';ctx.lineWidth=Math.max(.6,cell*.1);const band=4;
+  for(let z=0;z<D;z++)for(let x=0;x<W;x++){
+    const h=topY(x,z);
+    if(x>0&&Math.floor(h/band)!==Math.floor(topY(x-1,z)/band)){
+      ctx.beginPath();ctx.moveTo(x*cell,z*cell);ctx.lineTo(x*cell,(z+1)*cell);ctx.stroke();
+    }
+    if(z>0&&Math.floor(h/band)!==Math.floor(topY(x,z-1)/band)){
+      ctx.beginPath();ctx.moveTo(x*cell,z*cell);ctx.lineTo((x+1)*cell,z*cell);ctx.stroke();
+    }
+  }
+  ctx.textBaseline='middle';ctx.font='bold '+Math.max(9,cell*1.3)+'px "Trebuchet MS",sans-serif';
+  labels.forEach(l=>{
+    const px=l.x*cell+cell/2,pz=l.z*cell+cell/2,rad=Math.max(2.5,cell*.3);
+    ctx.beginPath();ctx.arc(px,pz,rad,0,Math.PI*2);ctx.fillStyle='#ffcf33';ctx.fill();
+    ctx.lineWidth=1;ctx.strokeStyle='#1c241e';ctx.stroke();
+    ctx.fillStyle='#1c241e';ctx.fillText(l.text,px+rad+3,pz);
+  });
+}
+const mapOverlay=$('mapOverlay');
+$('mapBtn').addEventListener('click',()=>{closeNew();mapOpen=true;mapOverlay.classList.add('open');drawMap()});
+$('mapClose').addEventListener('click',()=>{mapOpen=false;mapOverlay.classList.remove('open')});
+
+/* ---------- starters, saving ---------- */
+function fillLayer(y,t,x0,x1){for(let z=0;z<D;z++)for(let x=(x0||0);x<(x1===undefined?W:x1);x++)world[idx(x,y,z)]=t}
+function starter(kind,undoable){
+  if(undoable)undoStack.push({snap:world.slice(),W:W,labels:cloneLabels()});
+  if(kind==='example'&&W!==96)setupDims(96);
+  world=new Uint8Array(W*H*D);labels=[];renderLabels();resetTroll(false);
+  if(kind==='example'){genExample();renderLabels();setView('3d')}
+  if(kind==='flat'){fillLayer(0,2);fillLayer(1,1)}
+  if(kind==='layers'){[9,9,7,6,5,3,2,1].forEach((t,y)=>fillLayer(y,t))}
+  if(kind==='sea'){
+    fillLayer(0,10);fillLayer(1,6);
+    fillLayer(2,5,0,W/2);fillLayer(3,2,0,W/2);fillLayer(4,1,0,W/2);
+    fillLayer(2,4,W/2,W);fillLayer(3,12,W/2,W);fillLayer(4,12,W/2,W);
+  }
+  captureBaseline();
+  cut=D-1;$('cut').value=cut;rebuild();
+  if(kind==='example')say('Explore this example. Turn it, zoom in, and try the Slice slider to see the folded rock layers inside.',10000);
+}
+/* example fold-mountain range, generated the same way every time; peak kept below troll height */
+function hash2(x,z){const n=Math.sin(x*127.1+z*311.7)*43758.5453;return n-Math.floor(n)}
+function vnoise(x,z){
+  const xi=Math.floor(x),zi=Math.floor(z),fx=x-xi,fz=z-zi,sx=fx*fx*(3-2*fx),sz=fz*fz*(3-2*fz);
+  const a=hash2(xi,zi),b=hash2(xi+1,zi),c=hash2(xi,zi+1),d=hash2(xi+1,zi+1);
+  return a+(b-a)*sx+(c-a)*sz+(a-b-c+d)*sx*sz;
+}
+function fbm(x,z){let v=0,amp=.5,f=1;for(let o=0;o<4;o++){v+=amp*vnoise(x*f,z*f);amp*=.5;f*=2}return v/.9375}
+function genExample(){
+  const WL=5,SEQ=[9,7,6,5,6,7,5],N=W*D,mt=new Float32Array(N),mask=new Float32Array(N),hs=new Int16Array(N);let mx=0;
+  for(let z=0;z<D;z++)for(let x=0;x<W;x++){
+    const u=x/(W-1),v=z/(D-1),zc=.5+.17*Math.sin(u*5.2+.6),dd=Math.abs(v-zc);
+    const m=Math.exp(-Math.pow(dd/.2,2))*Math.pow(Math.sin(Math.PI*Math.min(1,Math.max(0,u*1.08-.04))),.7);
+    const r=1-Math.abs(2*fbm(x*.06+3,z*.06+9)-1),k=x+W*z;
+    mask[k]=m;mt[k]=m*(.3+.7*r);if(mt[k]>mx)mx=mt[k];
+  }
+  let sum=0;
+  for(let z=0;z<D;z++)for(let x=0;x<W;x++){
+    const k=x+W*z,base=3+4.5*fbm(x*.05+40,z*.05+40);
+    const h=Math.max(2,Math.min(33,Math.round(base+mt[k]/mx*27)));hs[k]=h;if(h>hs[sum])sum=k;
+    for(let y=0;y<h;y++){
+      const depth=h-1-y;let t=SEQ[Math.floor((y-.5*(h-6)+42)/3)%SEQ.length];
+      if(y<2)t=9;
+      if(h<21&&depth<3)t=depth===0?(h<=WL?4:1):depth===1?2:3;
+      if(h>=27&&depth<(h>=30?2:1))t=13;
+      world[idx(x,y,z)]=t;
+    }
+    for(let y=h;y<WL;y++)world[idx(x,y,z)]=12;
+  }
+  for(let z=2;z<D-2;z++)for(let x=2;x<W-2;x++){
+    const h=hs[x+W*z];if(h<=WL||h>=21)continue;
+    const r=hash2(x*3.1+7,z*5.3+11),st=h<14?(r<.03?0:-1):h<18?(r<.035?1:-1):(r<.03?2:-1);
+    if(st<0)continue;
+    STAMPS[st].cells.forEach(q=>{const X=x+q[0],Y=h+q[1],Z=z+q[2];if(inb(X,Y,Z)&&!world[idx(X,Y,Z)])world[idx(X,Y,Z)]=q[3]});
+  }
+  const sx=sum%W,sz=Math.floor(sum/W),best=(score)=>{let b=-1,bs=-1e9;for(let k=0;k<N;k++){const v=score(k,k%W,Math.floor(k/W));if(v>bs){bs=v;b=k}}return bs>-1e8?b:-1};
+  const near=(x,z)=>-Math.hypot(x-sx,z-sz);
+  const add=(k,text,y)=>{if(k>=0)labels.push({x:k%W,y:y===undefined?hs[k]-1:y,z:Math.floor(k/W),text:text})};
+  add(sum,'Summit');
+  add(best((k,x,z)=>Math.hypot(x-sx,z-sz)>22?hs[k]:-1e9),'Ridge');
+  add(best((k,x,z)=>hs[k]===27?near(x,z):-1e9),'Snow line');
+  add(best((k,x,z)=>hs[k]===20?near(x,z):-1e9),'Tree line');
+  add(best((k,x,z)=>mask[k]>.1&&mask[k]<.3&&hs[k]>WL?-hs[k]+near(x,z)*.01:-1e9),'Valley');
+  add(best((k)=>hs[k]<WL?-hs[k]:-1e9),'Lake',WL-1);
+}
+function encode(){
+  const out=[];let prev=world[0],n=0;
+  for(let i=0;i<world.length;i++){if(world[i]===prev)n++;else{out.push(prev,n);prev=world[i];n=1}}
+  out.push(prev,n);return{app:'terrablocks',v:1,W:W,H:H,D:D,rle:out,labels:cloneLabels(),trollBeaten:troll.beaten,baseline:Array.from(baseline)};
+}
+function decode(o){
+  if(!o||o.app!=='terrablocks'||SIZES.indexOf(o.W)<0||o.D!==o.W||!(o.H>0&&o.H<=H)||!Array.isArray(o.rle))return false;
+  const w=new Uint8Array(o.W*H*o.D);let p=0;
+  for(let i=0;i<o.rle.length;i+=2){const t=o.rle[i],n=o.rle[i+1];if(t>=NB||p+n>w.length)return false;w.fill(t,p,p+n);p+=n}
+  if(p!==o.W*o.H*o.D)return false;
+  if(o.W!==W||!ground)setupDims(o.W);
+  world=w;resetTroll(o.trollBeaten);
+  if(Array.isArray(o.baseline)&&o.baseline.length===W*D)baseline=Int16Array.from(o.baseline);
+  else captureBaseline();
+  labels=(Array.isArray(o.labels)?o.labels:[]).filter(l=>l&&typeof l.text==='string'&&inb(l.x,l.y,l.z)).slice(0,40)
+    .map(l=>({x:l.x,y:l.y,z:l.z,text:l.text.slice(0,40)}));
+  renderLabels();return true;
+}
+let saveTimer=0;
+function scheduleSave(){
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>{try{localStorage.setItem('terrablocks-world',JSON.stringify(encode()))}catch(_){}} ,600);
+}
+function download(href,name){const a=document.createElement('a');a.href=href;a.download=name;document.body.appendChild(a);a.click();a.remove()}
+$('photo').addEventListener('click',()=>{
+  ghost.visible=false;renderer.render(scene,camera);placeLabels();
+  const c=document.createElement('canvas');c.width=canvas.width;c.height=canvas.height;
+  const g=c.getContext('2d'),k=canvas.width/window.innerWidth;
+  g.drawImage(canvas,0,0);
+  g.font='bold '+13*k+'px "Trebuchet MS",sans-serif';g.textBaseline='middle';g.textAlign='center';g.lineWidth=2*k;
+  labels.forEach(l=>{
+    if(!l.vis)return;
+    const x=l.sx*k,y=l.sy*k,bw=g.measureText(l.text).width+18*k,bh=24*k,by=y-22*k-bh;
+    g.strokeStyle='#2b3a2e';g.beginPath();g.moveTo(x,y);g.lineTo(x,by+bh);g.stroke();
+    g.fillStyle='#f3f6ea';g.fillRect(x-bw/2,by,bw,bh);g.strokeRect(x-bw/2,by,bw,bh);
+    g.fillStyle='#1c241e';g.fillText(l.text,x,by+bh/2);
+  });
+  g.textAlign='right';g.font='bold '+12*k+'px "Trebuchet MS",sans-serif';g.fillStyle='rgba(43,58,46,.7)';
+  g.fillStyle="rgba(0,0,0,.8)";g.fillText("Created by Mr Andy",c.width-16*k,22*k);
+  g.font='italic '+10.5*k+'px "Trebuchet MS",sans-serif';
+  g.fillText('\u2018You are not within the mountains, the mountains are within you\u2019',c.width-16*k,38*k);
+  const av=$('avatar');
+  if(av&&av.complete&&av.naturalWidth){
+    const d=30*k,ax=c.width-16*k-d,ay=48*k;
+    g.save();g.globalAlpha=.85;g.beginPath();g.arc(ax+d/2,ay+d/2,d/2,0,Math.PI*2);g.clip();g.drawImage(av,ax,ay,d,d);g.restore();
+  }
+  download(c.toDataURL('image/png'),'mountain-makers-photo.png');
+});
+$('saveFile').addEventListener('click',()=>{
+  const url=URL.createObjectURL(new Blob([JSON.stringify(encode())],{type:'application/json'}));
+  download(url,'my-landform.json');setTimeout(()=>URL.revokeObjectURL(url),2000);
+});
+$('openFile').addEventListener('click',()=>$('fileIn').click());
+$('fileIn').addEventListener('change',e=>{
+  const f=e.target.files[0];if(!f)return;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    const before=world.slice(),bw=W,bl=cloneLabels();let ok=false;
+    try{ok=decode(JSON.parse(rd.result))}catch(_){}
+    if(ok){undoStack.push({snap:before,W:bw,labels:bl});rebuild()}
+    else{hint.textContent='That file is not a Mountain Makers model. Choose a file saved from this app.';hint.classList.remove('gone');setTimeout(hideHint,6000)}
+    e.target.value='';
+  };
+  rd.readAsText(f);
+});
+
+let loaded=false;
+try{const s=localStorage.getItem('terrablocks-world');if(s)loaded=decode(JSON.parse(s))}catch(_){}
+if(loaded){rebuild()}else{setupDims(40);captureBaseline()}
+needsSetup=!loaded;
+
+(function loop(){updateCam();{const now=performance.now();climbers.forEach(c=>c.tick(now));eagles.forEach(e=>e.tick(now));trollTick(now)}renderer.render(scene,camera);placeLabels();requestAnimationFrame(loop)})();
+})();
 </script>
 </body>
 </html>
