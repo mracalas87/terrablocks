@@ -259,6 +259,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance:none; width:20px; h
         Stock cost: <strong>€<span id="stock-cost">1.70</span></strong>
         &nbsp;·&nbsp; Remaining: <strong>€<span id="balance-after">8.30</span></strong>
       </div>
+      <div id="recipe-warning" style="display:none;background:#FFF3E0;border-left:3px solid #E65100;border-radius:8px;padding:10px 12px;margin-top:8px;font-size:.8rem;color:#BF360C;"></div>
     </div>
 
     <div class="card">
@@ -546,6 +547,9 @@ function showScreen(id){
 }
 
 function initDay(){
+  // Switch screen FIRST before anything else can crash
+  showScreen('plan-screen');
+  document.getElementById('sim-result').style.display='none';
   G.weather = pickWeather();
   document.getElementById('weather-emoji').textContent = G.weather.emoji;
   document.getElementById('weather-label').textContent = G.weather.label;
@@ -558,11 +562,9 @@ function initDay(){
   document.getElementById('day-label-n').textContent = G.day;
   document.getElementById('day-bar').style.width = ((G.day/30)*100)+'%';
 
-  document.getElementById('sim-result').style.display='none';
   G.satHappy=0; G.satPrice=0; G.satTaste=0; G.satSoldout=0; G.profitHistory=[];
   updateCostSummary();
   drawChart();
-  showScreen('plan-screen');
   setTimeout(drawWeatherCanvas,50);
   // Yesterday banner
   const banner=document.getElementById('yesterday-banner');
