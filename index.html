@@ -135,6 +135,11 @@
     <button id="tPaint" data-tip="Swap|Tap a block to change it into the block you have chosen." aria-pressed="false">Swap</button>
     <button id="tLabel" data-tip="Label|Tap a block to pin a name tag to it. Tap a tag to change or delete it." aria-pressed="false">Label</button>
   </div>
+  <div class="seg" role="group" aria-label="Brush size">
+    <button id="bBrush1" data-tip="1×1|Build, Dig and Swap affect one block at a time." aria-pressed="true">1×1</button>
+    <button id="bBrush2" data-tip="2×2|Build, Dig and Swap affect a 2 by 2 patch in one tap." aria-pressed="false">2×2</button>
+    <button id="bBrush5" data-tip="5×5|Build, Dig and Swap affect a 5 by 5 patch in one tap. Good for building quickly." aria-pressed="false">5×5</button>
+  </div>
   <button id="undo" data-tip="Undo|Takes back your last change. Tap again to go back further.">Undo</button>
   <span class="gap"></span>
   <button id="helpBtn" data-tip="Help|Shows the instructions for this task again.">Help</button>
@@ -700,6 +705,31 @@ function setBlock(c,t){
   undoStack.push({i:i,prev:world[i]});if(undoStack.length>300)undoStack.shift();
   world[i]=t;rebuild();
 }
+let brush=1;
+function brushCells(cx,cz,n){
+  const r=Math.floor(n/2),out=[];
+  for(let dz=-r;dz<n-r;dz++)for(let dx=-r;dx<n-r;dx++){
+    const x=cx+dx,z=cz+dz;if(x>=0&&x<W&&z>=0&&z<D)out.push([x,z]);
+  }
+  return out;
+}
+function applyBrush(c,t){
+  const batch=[];
+  brushCells(c[0],c[2],brush).forEach(([x,z])=>{
+    if(z>cut)return;
+    if(t==='build'){
+      const y=Math.max(0,topY(x,z));
+      if(!inb(x,y,z))return;
+      const i=idx(x,y,z);if(world[i])return;
+      batch.push({i:i,prev:0});world[i]=sel;
+    }else{
+      const top=topY(x,z);if(top<=0)return;
+      const y=top-1,i=idx(x,y,z),prev=world[i];if(!prev)return;
+      batch.push({i:i,prev:prev});world[i]=t==='dig'?0:sel;
+    }
+  });
+  if(batch.length){undoStack.push({batch:batch});if(undoStack.length>300)undoStack.shift();rebuild()}
+}
 function act(e){
   if(gemTap(e)){return}
   if(tool==='label'){
@@ -710,6 +740,7 @@ function act(e){
   }
   const c=targetCell(pick(e));if(!c)return;
   if(tool==='build'&&stamp!==null){placeStamp(c,STAMPS[stamp]);hideHint();return}
+  if(brush>1){applyBrush(c,tool);hideHint();return}
   setBlock(c,tool==='dig'?0:sel);
   hideHint();
 }
@@ -837,6 +868,9 @@ STAMPS.forEach((st,n)=>{
 const toolBtns={build:$('tBuild'),dig:$('tDig'),paint:$('tPaint'),label:$('tLabel')};
 function setTool(t){tool=t;for(const k in toolBtns)toolBtns[k].setAttribute('aria-pressed',k===t)}
 for(const k in toolBtns)toolBtns[k].addEventListener('click',()=>setTool(k));
+const brushBtns={1:$('bBrush1'),2:$('bBrush2'),5:$('bBrush5')};
+function setBrush(n){brush=n;for(const k in brushBtns)brushBtns[k].setAttribute('aria-pressed',+k===n)}
+for(const k in brushBtns)brushBtns[k].addEventListener('click',()=>setBrush(+k));
 $('undo').addEventListener('click',undo);
 document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
 $('zin').addEventListener('click',()=>cam.r*=.8);
