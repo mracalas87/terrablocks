@@ -47,6 +47,15 @@
   #footStat{left:10px;bottom:calc(164px + env(safe-area-inset-bottom,0px));padding:6px 12px;font-size:13px;font-weight:700}
   #footStat b{color:var(--contour)}
 
+  #joyPad{position:fixed;left:calc(14px + env(safe-area-inset-left,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));display:none;padding:0;background:transparent;border:0;box-shadow:none;z-index:4}
+  #joyPad.show{display:block}
+  #jumpPad{position:fixed;right:calc(14px + env(safe-area-inset-right,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));display:none;padding:0;background:transparent;border:0;box-shadow:none;z-index:4}
+  #jumpPad.show{display:block}
+  #joyBase{width:116px;height:116px;border-radius:50%;background:rgba(243,246,234,.85);border:3px solid var(--slate);position:relative;touch-action:none}
+  #joyStick{width:50px;height:50px;border-radius:50%;background:var(--marker);border:2px solid var(--slate);position:absolute;left:33px;top:33px;will-change:transform}
+  #jumpBtn{width:78px;height:78px;border-radius:50%;background:var(--paper);border:3px solid var(--slate);font-size:14px;font-weight:700;box-shadow:3px 3px 0 var(--slate)}
+  #jumpBtn:active{background:var(--marker)}
+
   #palette{left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom,0px));padding:8px;display:flex;gap:8px;overflow-x:auto;touch-action:pan-x}
   .blk{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 6px 4px;min-width:72px;border-radius:8px;font-size:12.5px;font-weight:700;line-height:1.15}
   .blk img{width:44px;height:44px;image-rendering:pixelated;border:2px solid var(--slate);border-radius:4px;display:block}
@@ -185,7 +194,12 @@
   <hr>
   <button id="zin" data-tip="Zoom in|Moves closer. You can also pinch with two fingers." aria-label="Zoom in">+</button>
   <button id="zout" data-tip="Zoom out|Moves further away to see the whole model." aria-label="Zoom out">&minus;</button>
+  <hr>
+  <button id="walkBtn" data-tip="Walk|Puts you in the mountain as a player, like Minecraft. Drag to look around, use the stick to walk and Jump to climb ledges. Tap again to stop." aria-pressed="false">Walk</button>
 </div>
+
+<div id="joyPad"><div id="joyBase"><div id="joyStick"></div></div></div>
+<div id="jumpPad"><button id="jumpBtn" aria-label="Jump">Jump</button></div>
 
 <div id="footStat" class="panel" data-tip="Blocks laid|How many blocks you have added since you started this model. This is what unlocks each hidden character."></div>
 <label id="slice" data-tip="Slice|Slide to cut through your model and see the layers inside, like a cross-section." class="panel">Slice
@@ -371,6 +385,7 @@ function setupDims(w){
 }
 function resizeLand(n){
   if(n===W)return;
+  if(walk)setWalk(false);
   const old=world,ow=W,off=Math.floor((n-ow)/2);
   undoStack.length=0;undoStack.push({snap:old,W:ow,labels:cloneLabels()});
   setupDims(n);
@@ -652,7 +667,80 @@ function checkClimbers(){
 
 /* ---------- camera ---------- */
 const cam={theta:Math.PI/4,phi:1.0,r:68,target:new THREE.Vector3(0,4,0)};
+let walk=false,walkYaw=0,walkPitch=0,walkSpeed=4.3,jumpV=7.4,gravity=20,maxStep=1.05,eyeH=1.55;
+let playerVY=0,onGround=true,jumpQueued=false,walkLast=performance.now();
+let joyActive=false,joyId=null,joyX=0,joyZ=0;
+const playerPos=new THREE.Vector3(),walkDir=new THREE.Vector3();
+function walkDirection(yaw,pitch){return walkDir.set(Math.sin(yaw)*Math.cos(pitch),Math.sin(pitch),Math.cos(yaw)*Math.cos(pitch))}
+function blockX(wx){return Math.floor(wx+W/2)}
+function blockZ(wz){return Math.floor(wz+D/2)}
+function surfaceY(x,z){
+  if(x<0||x>=W||z<0||z>=D)return 0;
+  for(let y=H-1;y>=0;y--){if(world[idx(x,y,z)])return y+1}
+  return 0;
+}
+function setWalk(on){
+  if(on===walk)return;
+  walk=on;
+  $('walkBtn').setAttribute('aria-pressed',String(walk));
+  $('joyPad').classList.toggle('show',walk);
+  $('jumpPad').classList.toggle('show',walk);
+  $('palette').style.display=walk?'none':'';
+  $('slice').style.display=walk?'none':'';
+  if(walk){
+    const d=cam.target.clone().sub(camera.position).normalize();
+    walkYaw=Math.atan2(d.x,d.z);walkPitch=0;
+    playerPos.set(camera.position.x,0,camera.position.z);
+    playerPos.y=surfaceY(blockX(playerPos.x),blockZ(playerPos.z));
+    playerVY=0;onGround=true;jumpQueued=false;joyActive=false;joyId=null;joyX=0;joyZ=0;
+    const js=$('joyStick');if(js)js.style.transform='translate(0,0)';
+    ghost.visible=false;
+    say('Walking: drag to look around, use the stick to move and Jump to climb ledges. Tap Walk again to stop.',6000);
+  }else{
+    setView('3d');
+  }
+}
+function tryMove(dx,dz){
+  const footY=playerPos.y,limit=onGround?maxStep:maxStep+0.3;
+  if(dx){
+    const nx=playerPos.x+dx,bx=blockX(nx),bz=blockZ(playerPos.z);
+    if(bx>=0&&bx<W&&(surfaceY(bx,bz)-footY)<=limit)playerPos.x=nx;
+  }
+  if(dz){
+    const nz=playerPos.z+dz,bx=blockX(playerPos.x),bz=blockZ(nz);
+    if(bz>=0&&bz<D&&(surfaceY(bx,bz)-footY)<=limit)playerPos.z=nz;
+  }
+}
+function walkTick(now){
+  const dt=Math.min(.05,(now-walkLast)/1000);walkLast=now;
+  if(!walk)return;
+  const fwdI=-joyZ,strafeI=joyX,mag=Math.min(1,Math.hypot(fwdI,strafeI));
+  if(mag>0.02){
+    const fx=Math.sin(walkYaw),fz=Math.cos(walkYaw),rx=Math.cos(walkYaw),rz=-Math.sin(walkYaw);
+    const nx=fwdI*fx+strafeI*rx,nz=fwdI*fz+strafeI*rz,l=Math.hypot(nx,nz)||1;
+    tryMove((nx/l)*mag*walkSpeed*dt,(nz/l)*mag*walkSpeed*dt);
+  }
+  const bx=blockX(playerPos.x),bz=blockZ(playerPos.z),gy=surfaceY(bx,bz);
+  if(jumpQueued&&onGround){playerVY=jumpV;onGround=false}
+  jumpQueued=false;
+  if(onGround){
+    if(Math.abs(gy-playerPos.y)<=maxStep){
+      playerPos.y+=(gy-playerPos.y)*Math.min(1,14*dt);
+      if(Math.abs(gy-playerPos.y)<0.015)playerPos.y=gy;
+    }else{onGround=false;playerVY=0}
+  }else{
+    playerVY-=gravity*dt;playerPos.y+=playerVY*dt;
+    if(playerPos.y<=gy){playerPos.y=gy;playerVY=0;onGround=true}
+  }
+  playerPos.y=Math.max(0,Math.min(H,playerPos.y));
+}
 function updateCam(){
+  if(walk){
+    camera.position.set(playerPos.x,playerPos.y+eyeH,playerPos.z);
+    const d=walkDirection(walkYaw,walkPitch);
+    camera.lookAt(playerPos.x+d.x,playerPos.y+eyeH+d.y,playerPos.z+d.z);
+    return;
+  }
   cam.phi=Math.max(.01,Math.min(1.55,cam.phi));
   cam.r=Math.max(6,Math.min(260,cam.r));
   const s=Math.sin(cam.phi);
@@ -731,6 +819,7 @@ function applyBrush(c,t){
   if(batch.length){undoStack.push({batch:batch});if(undoStack.length>300)undoStack.shift();rebuild()}
 }
 function act(e){
+  if(walk)return;
   if(gemTap(e)){return}
   if(tool==='label'){
     const p=pick(e);
@@ -756,6 +845,7 @@ function placeStamp(c,st){
 }
 function undo(){
   const u=undoStack.pop();if(!u)return;
+  if(u.snap&&u.W!==W&&walk)setWalk(false);
   if(u.snap){if(u.W!==W)setupDims(u.W);world=u.snap;if(u.labels){labels=u.labels;renderLabels()}}else if(u.batch)u.batch.forEach(b=>{world[b.i]=b.prev});else world[u.i]=u.prev;
   rebuild();
 }
@@ -772,7 +862,7 @@ canvas.addEventListener('pointerdown',e=>{
 canvas.addEventListener('pointermove',e=>{
   const p=pts.get(e.pointerId);
   if(!p){
-    if(e.pointerType==='mouse'){
+    if(e.pointerType==='mouse'&&!walk){
       const c=targetCell(pick(e));
       ghost.visible=!!c;if(c)ghost.position.set(c[0]+.5-W/2,c[1]+.5,c[2]+.5-D/2);
     }
@@ -782,7 +872,8 @@ canvas.addEventListener('pointermove',e=>{
   if(pts.size===1){
     if(!moved&&Math.hypot(e.clientX-start.x,e.clientY-start.y)>7)moved=true;
     if(moved){
-      if(btn===2||e.shiftKey)pan(dx,dy);
+      if(walk){walkYaw-=dx*.006;walkPitch=Math.max(-1.3,Math.min(1.3,walkPitch-dy*.006))}
+      else if(btn===2||e.shiftKey)pan(dx,dy);
       else{cam.theta-=dx*.008;cam.phi-=dy*.008}
     }
   }else if(pts.size===2){
@@ -875,6 +966,29 @@ $('undo').addEventListener('click',undo);
 document.querySelectorAll('[data-view]').forEach(b=>b.addEventListener('click',()=>setView(b.dataset.view)));
 $('zin').addEventListener('click',()=>cam.r*=.8);
 $('zout').addEventListener('click',()=>cam.r*=1.25);
+$('walkBtn').addEventListener('click',()=>setWalk(!walk));
+const joyBase=$('joyBase'),joyStick=$('joyStick');
+function updateJoy(e){
+  const r=joyBase.getBoundingClientRect(),cx=r.left+r.width/2,cy=r.top+r.height/2;
+  let dx=e.clientX-cx,dy=e.clientY-cy;
+  const max=r.width/2-14,len=Math.hypot(dx,dy)||1;
+  if(len>max){dx*=max/len;dy*=max/len}
+  joyStick.style.transform='translate('+dx+'px,'+dy+'px)';
+  joyX=dx/max;joyZ=dy/max;
+}
+joyBase.addEventListener('pointerdown',e=>{
+  e.preventDefault();joyActive=true;joyId=e.pointerId;
+  try{joyBase.setPointerCapture(e.pointerId)}catch(_){}
+  updateJoy(e);
+});
+joyBase.addEventListener('pointermove',e=>{if(joyActive&&e.pointerId===joyId){e.preventDefault();updateJoy(e)}});
+function endJoy(e){
+  if(e.pointerId!==joyId)return;
+  joyActive=false;joyId=null;joyX=0;joyZ=0;joyStick.style.transform='translate(0,0)';
+}
+joyBase.addEventListener('pointerup',endJoy);joyBase.addEventListener('pointercancel',endJoy);
+$('jumpBtn').addEventListener('pointerdown',e=>{e.preventDefault();jumpQueued=true});
+window.addEventListener('blur',()=>{joyActive=false;joyX=0;joyZ=0});
 $('cut').addEventListener('input',e=>{cut=+e.target.value;rebuild()});
 const newMenu=$('newMenu');
 const sizeMenu=$('sizeMenu');
@@ -1014,6 +1128,7 @@ $('mapClose').addEventListener('click',()=>{mapOpen=false;mapOverlay.classList.r
 /* ---------- starters, saving ---------- */
 function fillLayer(y,t,x0,x1){for(let z=0;z<D;z++)for(let x=(x0||0);x<(x1===undefined?W:x1);x++)world[idx(x,y,z)]=t}
 function starter(kind,undoable){
+  if(walk)setWalk(false);
   if(undoable)undoStack.push({snap:world.slice(),W:W,labels:cloneLabels()});
   if(kind==='example'&&W!==96)setupDims(96);
   world=new Uint8Array(W*H*D);labels=[];renderLabels();resetTroll(false);
@@ -1145,7 +1260,7 @@ try{const s=localStorage.getItem('terrablocks-world');if(s)loaded=decode(JSON.pa
 if(loaded){rebuild()}else{setupDims(40);captureBaseline()}
 needsSetup=!loaded;
 
-(function loop(){updateCam();{const now=performance.now();climbers.forEach(c=>c.tick(now));eagles.forEach(e=>e.tick(now));trollTick(now)}renderer.render(scene,camera);placeLabels();requestAnimationFrame(loop)})();
+(function loop(){const now=performance.now();walkTick(now);updateCam();climbers.forEach(c=>c.tick(now));eagles.forEach(e=>e.tick(now));trollTick(now);renderer.render(scene,camera);placeLabels();requestAnimationFrame(loop)})();
 })();
 </script>
 </body>
