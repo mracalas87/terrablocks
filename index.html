@@ -426,6 +426,7 @@ function setupDims(w){
 function resizeLand(n){
   if(n===W)return;
   if(walk)setWalk(false);
+  clearFish();
   const old=world,ow=W,off=Math.floor((n-ow)/2);
   undoStack.length=0;undoStack.push({snap:old,W:ow,labels:cloneLabels()});
   setupDims(n);
@@ -681,6 +682,71 @@ function trollTick(now){
   undoStack.push({i:i,prev:world[i]});if(undoStack.length>300)undoStack.shift();
   world[i]=0;rebuild();
 }
+/* ---------- fish ---------- */
+const MAX_FISH=30;
+const fish=[],fishColors=[0xff7a3c,0xf2c230,0xc0c7cf,0x4fb0c9,0xe85a7a];
+let fishLast=performance.now(),fishCapWarned=false;
+function clearFish(){fish.forEach(f=>scene.remove(f.g));fish.length=0;fishCapWarned=false}
+function isWaterCol(x,z){
+  if(!inb(x,0,z))return false;
+  for(let y=H-1;y>=0;y--){const t=world[idx(x,y,z)];if(t)return!!BLOCKS[t].water}
+  return false;
+}
+function waterTop(x,z){
+  for(let y=H-1;y>=0;y--){const t=world[idx(x,y,z)];if(t)return BLOCKS[t].water?y:-1}
+  return -1;
+}
+function buildFish(color){
+  const g=new THREE.Group();
+  const body=lam(color),fin=lam(0xffffff),eye=lam(0x1c241e);
+  const box=(w,h,d,x,y,z,m)=>{const b=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),m);b.position.set(x,y,z);g.add(b)};
+  box(.3,.14,.13,0,0,0,body);
+  box(.1,.11,.03,-.19,0,0,body);
+  box(.04,.09,.1,.08,.1,0,fin);
+  box(.025,.025,.025,.14,.015,.055,eye);
+  return g;
+}
+function spawnFish(x,z){
+  if(fish.length>=MAX_FISH){
+    if(!fishCapWarned){fishCapWarned=true;say('That’s enough fish for one river — '+MAX_FISH+' is plenty for the iPads to swim smoothly!',6000)}
+    return;
+  }
+  const g=buildFish(fishColors[Math.floor(Math.random()*fishColors.length)]);
+  g.scale.setScalar(.85+Math.random()*.4);
+  scene.add(g);
+  const f={g:g,x:x,z:z,tx:x,tz:z,t0:performance.now(),dur:900+Math.random()*700,from:new THREE.Vector3(),to:new THREE.Vector3(),bob:Math.random()*10};
+  const y=waterTop(x,z)+.3;
+  f.from.set(x+.5-W/2,y,z+.5-D/2);f.to.copy(f.from);
+  g.position.copy(f.from);
+  fish.push(f);
+}
+function fishTick(now){
+  const dt=Math.min(.05,(now-fishLast)/1000);fishLast=now;
+  for(let n=fish.length-1;n>=0;n--){
+    const f=fish[n];
+    if(!isWaterCol(f.x,f.z)){scene.remove(f.g);fish.splice(n,1);continue}
+    f.g.visible=f.z<=cut;
+    const k=Math.min(1,(now-f.t0)/f.dur);
+    f.g.position.lerpVectors(f.from,f.to,k);
+    f.g.position.y+=Math.sin(now/400+f.bob)*.05;
+    if(k>=1){
+      const opts=[];
+      for(let dz=-1;dz<=1;dz++)for(let dx=-1;dx<=1;dx++){
+        if(!dx&&!dz)continue;
+        if(isWaterCol(f.x+dx,f.z+dz))opts.push([f.x+dx,f.z+dz]);
+      }
+      f.from.copy(f.g.position);
+      if(opts.length){
+        const pick=opts[Math.floor(Math.random()*opts.length)];
+        f.g.rotation.y=Math.atan2(-(pick[1]-f.z),pick[0]-f.x);
+        f.x=pick[0];f.z=pick[1];
+      }
+      const y=waterTop(f.x,f.z)+.3;
+      f.to.set(f.x+.5-W/2,y,f.z+.5-D/2);
+      f.t0=now;f.dur=900+Math.random()*700;
+    }
+  }
+}
 function checkClimbers(){
   let peak=-1;
   for(let i=world.length-1;i>=0;i--)if(world[i]&&!BLOCKS[world[i]].water){peak=i;break}
@@ -832,6 +898,7 @@ function setBlock(c,t){
   const i=idx(c[0],c[1],c[2]);if(world[i]===t)return;
   undoStack.push({i:i,prev:world[i]});if(undoStack.length>300)undoStack.shift();
   world[i]=t;rebuild();
+  if(t&&BLOCKS[t].water)spawnFish(c[0],c[2]);
 }
 let brush=1;
 function brushCells(cx,cz,n){
@@ -842,7 +909,7 @@ function brushCells(cx,cz,n){
   return out;
 }
 function applyBrush(c,t){
-  const batch=[];
+  const batch=[],newWater=[];
   brushCells(c[0],c[2],brush).forEach(([x,z])=>{
     if(z>cut)return;
     if(t==='build'){
@@ -850,13 +917,16 @@ function applyBrush(c,t){
       if(!inb(x,y,z))return;
       const i=idx(x,y,z);if(world[i])return;
       batch.push({i:i,prev:0});world[i]=sel;
+      if(BLOCKS[sel].water)newWater.push([x,z]);
     }else{
       const top=topY(x,z);if(top<=0)return;
       const y=top-1,i=idx(x,y,z),prev=world[i];if(!prev)return;
       batch.push({i:i,prev:prev});world[i]=t==='dig'?0:sel;
+      if(t==='paint'&&BLOCKS[sel].water)newWater.push([x,z]);
     }
   });
   if(batch.length){undoStack.push({batch:batch});if(undoStack.length>300)undoStack.shift();rebuild()}
+  newWater.forEach(([x,z])=>spawnFish(x,z));
 }
 function act(e){
   if(walk)return;
@@ -1171,6 +1241,7 @@ $('mapClose').addEventListener('click',()=>{mapOpen=false;mapOverlay.classList.r
 function fillLayer(y,t,x0,x1){for(let z=0;z<D;z++)for(let x=(x0||0);x<(x1===undefined?W:x1);x++)world[idx(x,y,z)]=t}
 function starter(kind,undoable){
   if(walk)setWalk(false);
+  clearFish();
   if(undoable)undoStack.push({snap:world.slice(),W:W,labels:cloneLabels()});
   if(kind==='example'&&W!==96)setupDims(96);
   world=new Uint8Array(W*H*D);labels=[];renderLabels();resetTroll(false);
@@ -1290,7 +1361,7 @@ $('fileIn').addEventListener('change',e=>{
   rd.onload=()=>{
     const before=world.slice(),bw=W,bl=cloneLabels();let ok=false;
     try{ok=decode(JSON.parse(rd.result))}catch(_){}
-    if(ok){undoStack.push({snap:before,W:bw,labels:bl});rebuild()}
+    if(ok){clearFish();undoStack.push({snap:before,W:bw,labels:bl});rebuild()}
     else{hint.textContent='That file is not a Mountain Makers model. Choose a file saved from this app.';hint.classList.remove('gone');setTimeout(hideHint,6000)}
     e.target.value='';
   };
@@ -1302,7 +1373,7 @@ try{const s=localStorage.getItem('terrablocks-world');if(s)loaded=decode(JSON.pa
 if(loaded){rebuild()}else{setupDims(40);captureBaseline()}
 needsSetup=!loaded;
 
-(function loop(){const now=performance.now();walkTick(now);updateCam();climbers.forEach(c=>c.tick(now));eagles.forEach(e=>e.tick(now));trollTick(now);renderer.render(scene,camera);placeLabels();requestAnimationFrame(loop)})();
+(function loop(){const now=performance.now();walkTick(now);updateCam();climbers.forEach(c=>c.tick(now));eagles.forEach(e=>e.tick(now));trollTick(now);fishTick(now);renderer.render(scene,camera);placeLabels();requestAnimationFrame(loop)})();
 })();
 </script>
 </body>
